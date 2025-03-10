@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>DataReaderAdapter.Csv</PackageId>
+    <Title>DataReaderAdapter.Csv</Title>
+    <Description>DataReader adapter</Description>
+    <PackageTags>datareader bulkcopy csv</PackageTags>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Library/" Id="ddb4ef12-cc4e-5e88-e6fc-71a802f4de97">
+    <Project Path="DataReaderAdapter.Csv/DataReaderAdapter.Csv.csproj" />
+    <Project Path="DataReaderAdapter.Object/DataReaderAdapter.Object.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Analyzers.ruleset" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="LICENSE" />
+    <File Path="MySqlBulkLoader.sln.DotSettings" />
+    <File Path="README.md" />
+  </Folder>
+</Solution>
