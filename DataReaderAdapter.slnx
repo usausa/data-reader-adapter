@@ -14,4 +14,7 @@
     <File Path="MySqlBulkLoader.sln.DotSettings" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/Test/" Id="86e5dc6c-7b4b-45a7-9f4c-32963927f125">
+    <Project Path="DataReaderAdapter.Tests/DataReaderAdapter.Tests.csproj" Id="a6977c21-aa72-4137-8b2b-4778953eebca" />
+  </Folder>
 </Solution>
