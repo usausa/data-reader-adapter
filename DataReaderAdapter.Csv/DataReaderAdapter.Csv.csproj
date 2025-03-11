@@ -13,4 +13,8 @@
     <PackageTags>datareader bulkcopy csv</PackageTags>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+  </ItemGroup>
+
 </Project>
