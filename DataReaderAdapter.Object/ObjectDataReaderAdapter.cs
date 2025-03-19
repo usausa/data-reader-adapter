@@ -1,71 +1,120 @@
 namespace DataReaderAdapter;
 
 using System.Data;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
-// TODO
 #pragma warning disable CA1725
 public sealed class ObjectDataReaderAdapter<T> : IDataReader
 {
-    private readonly IEnumerator<T> source;
+    private static readonly ObjectDataReaderOption<T> DefaultOption = new();
+
+    private readonly PropertyInfo[] properties;
 
     private readonly Func<T, object?>[] accessors;
 
+    private readonly IEnumerator<T> source;
+
+    //--------------------------------------------------------------------------------
+    // Property
+    //--------------------------------------------------------------------------------
+
     public int FieldCount => accessors.Length;
 
-    public int Depth => throw new NotSupportedException();
+    public int Depth => 0;
 
-    public bool IsClosed => false;
+    public bool IsClosed { get; private set; }
 
     public int RecordsAffected => -1;
 
-    public object this[int i] => throw new NotSupportedException();
+    public object this[int i] => GetValue(i);
 
-    public object this[string name] => throw new NotSupportedException();
+    public object this[string name] => GetValue(GetOrdinal(name));
 
-    public ObjectDataReaderAdapter(IEnumerable<T> source, Func<T, object?>[] accessors)
+    //--------------------------------------------------------------------------------
+    // Constructor
+    //--------------------------------------------------------------------------------
+
+    public ObjectDataReaderAdapter(IEnumerable<T> source)
+        : this(DefaultOption, source)
     {
+    }
+
+    public ObjectDataReaderAdapter(ObjectDataReaderOption<T> option, IEnumerable<T> source)
+    {
+        properties = option.PropertySelector().ToArray();
+        accessors = properties.Select(option.AccessorFactory).ToArray();
         this.source = source.GetEnumerator();
-        this.accessors = accessors;
     }
 
     public void Dispose()
     {
-        source.Dispose();
+        Close();
     }
 
     public void Close()
     {
+        if (!IsClosed)
+        {
+            source.Dispose();
+            IsClosed = true;
+        }
     }
+
+    //--------------------------------------------------------------------------------
+    // Iterator
+    //--------------------------------------------------------------------------------
 
     public bool Read() => source.MoveNext();
 
-    public bool NextResult() => throw new NotSupportedException();
+    public bool NextResult() => false;
 
-    public bool IsDBNull(int i) => throw new NotSupportedException();
-
-    public object GetValue(int i) => accessors[i](source.Current!)!;
-
-    public int GetValues(object[] values)
-    {
-        for (var i = 0; i < accessors.Length; i++)
-        {
-            values[i] = accessors[i](source.Current!)!;
-        }
-
-        return accessors.Length;
-    }
+    //--------------------------------------------------------------------------------
+    // Metadata
+    //--------------------------------------------------------------------------------
 
     public IDataReader GetData(int i) => throw new NotSupportedException();
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => throw new NotSupportedException();
+    public string GetDataTypeName(int i) => properties[i].Name;
 
-    public Type GetFieldType(int i) => throw new NotSupportedException();
+    public Type GetFieldType(int i) => properties[i].PropertyType;
 
-    public string GetName(int i) => throw new NotSupportedException();
+    public string GetName(int i) => properties[i].Name;
 
-    public int GetOrdinal(string name) => throw new NotSupportedException();
+    public int GetOrdinal(string name)
+    {
+        for (var i = 0; i < properties.Length; i++)
+        {
+            if (String.Equals(properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    //--------------------------------------------------------------------------------
+    // Value
+    //--------------------------------------------------------------------------------
+
+    public bool IsDBNull(int i) => accessors[i](source.Current!) is null;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public object GetValue(int i) => accessors[i](source.Current!) ?? DBNull.Value;
+
+    public int GetValues(object[] values)
+    {
+        for (var i = 0; i < accessors.Length; i++)
+        {
+            values[i] = GetValue(i);
+        }
+
+        return accessors.Length;
+    }
+
+    // TODO support ?
 
     public bool GetBoolean(int i) => throw new NotSupportedException();
 
