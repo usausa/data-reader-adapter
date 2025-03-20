@@ -1,3 +1,6 @@
+using System.CommandLine;
+using System.CommandLine.NamingConventionBinder;
+using System.Data;
 using System.Globalization;
 
 using CsvHelper;
@@ -10,87 +13,134 @@ using MySqlConnector;
 
 using Smart.Data.Mapper;
 
-var content =
-    "Col1,Col2,Col3,Col4\n" +
-    "1,Abc,30,true\n" +
-    "2,Xyz,,false";
-var option = new CsvDataReaderOption();
-option.AddColumn("Col1");
-option.AddColumn("Col3", emptyAsNull: true);
+var rootCommand = new RootCommand("Example");
 
-#pragma warning disable CA1031
-try
+//--------------------------------------------------------------------------------
+// Csv
+//--------------------------------------------------------------------------------
+
+var csvCommand = new Command("csv", "CSV example");
+rootCommand.Add(csvCommand);
+
+csvCommand.Add(new Command("my", "Load to MySQL")
 {
-    await using var con1 = new SqlConnection("Server=mssql-server;Database=test;User Id=test;Password=test;TrustServerCertificate=true");
-    await con1.ExecuteAsync("truncate table Data2");
-
-    using var csv1 = new CsvReader(new StringReader(content), CultureInfo.InvariantCulture);
-    using var reader1 = new CsvDataReaderAdapter(option, csv1);
-
-    await con1.OpenAsync();
-    using var loader1 = new SqlBulkCopy(con1);
-    loader1.DestinationTableName = "Data2";
-    await loader1.WriteToServerAsync(reader1);
-
-    await using var con2 = new MySqlConnection("Server=mysql-server;Database=test;User Id=test;Password=test;AllowLoadLocalInfile=true");
-    await con2.ExecuteAsync("truncate table Data2");
-
-    using var csv2 = new CsvReader(new StringReader(content), CultureInfo.InvariantCulture);
-    using var reader2 = new CsvDataReaderAdapter(option, csv2);
-
-    await con2.OpenAsync();
-    var loader2 = new MySqlBulkCopy(con2)
+    Handler = CommandHandler.Create(static async () =>
     {
-        DestinationTableName = "Data2"
-    };
-    await loader2.WriteToServerAsync(reader2);
-}
-catch (Exception ex)
+        using var reader = new CsvDataReaderAdapter(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
+        await DataHelper.ImportToMySql(reader);
+    })
+});
+
+csvCommand.Add(new Command("sql", "Load to SQL Server")
 {
-    Console.WriteLine(ex);
-}
-#pragma warning restore CA1031
+    Handler = CommandHandler.Create(static async () =>
+    {
+        using var reader = new CsvDataReaderAdapter(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
+        await DataHelper.ImportToSql(reader);
+    })
+});
 
-//var list = new List<Data>
-//{
-//    new() { Id = 1, Value = "A" },
-//    new() { Id = 2 }
-//};
+//--------------------------------------------------------------------------------
+// Object
+//--------------------------------------------------------------------------------
+var objectCommand = new Command("object", "CSV example");
+rootCommand.Add(objectCommand);
 
-//#pragma warning disable CA1031
-//try
-//{
-//    await using var con1 = new SqlConnection("Server=mssql-server;Database=test;User Id=test;Password=test;TrustServerCertificate=true");
-//    await con1.ExecuteAsync("truncate table Data2");
+objectCommand.Add(new Command("my", "Load to MySQL")
+{
+    Handler = CommandHandler.Create(static async () =>
+    {
+        using var reader = new ObjectDataReaderAdapter<Data>(DataHelper.CreateObjectList());
+        await DataHelper.ImportToMySql(reader);
+    })
+});
 
-//    using var reader1 = new ObjectDataReaderAdapter<Data>(list);
+objectCommand.Add(new Command("sql", "Load to SQL Server")
+{
+    Handler = CommandHandler.Create(static async () =>
+    {
+        using var reader = new ObjectDataReaderAdapter<Data>(DataHelper.CreateObjectList());
+        await DataHelper.ImportToSql(reader);
+    })
+});
 
-//    await con1.OpenAsync();
-//    using var loader1 = new SqlBulkCopy(con1);
-//    loader1.DestinationTableName = "Data2";
-//    await loader1.WriteToServerAsync(reader1);
+//--------------------------------------------------------------------------------
+// Run
+//--------------------------------------------------------------------------------
+var result = await rootCommand.InvokeAsync(args).ConfigureAwait(false);
+#if DEBUG
+Console.ReadLine();
+#endif
+return result;
 
-//    await using var con2 = new MySqlConnection("Server=mysql-server;Database=test;User Id=test;Password=test;AllowLoadLocalInfile=true");
-//    await con2.ExecuteAsync("truncate table Data2");
-
-//    using var reader2 = new ObjectDataReaderAdapter<Data>(list);
-
-//    await con2.OpenAsync();
-//    var loader2 = new MySqlBulkCopy(con2)
-//    {
-//        DestinationTableName = "Data2"
-//    };
-//    await loader2.WriteToServerAsync(reader2);
-//}
-//catch (Exception ex)
-//{
-//    Console.WriteLine(ex);
-//}
-//#pragma warning restore CA1031
+//--------------------------------------------------------------------------------
+// Data
+//--------------------------------------------------------------------------------
 
 internal sealed class Data
 {
     public int Id { get; set; }
 
     public string? Value { get; set; }
+}
+
+internal static class DataHelper
+{
+    //--------------------------------------------------------------------------------
+    // Import
+    //--------------------------------------------------------------------------------
+
+    public static async ValueTask ImportToMySql(IDataReader reader)
+    {
+        await using var con = new MySqlConnection("Server=mysql-server;Database=test;User Id=test;Password=test;AllowLoadLocalInfile=true");
+        await con.ExecuteAsync("TRUNCATE TABLE import_data");
+
+        await con.OpenAsync();
+        var loader = new MySqlBulkCopy(con)
+        {
+            DestinationTableName = "import_data"
+        };
+        await loader.WriteToServerAsync(reader);
+    }
+
+    public static async ValueTask ImportToSql(IDataReader reader)
+    {
+        await using var con = new SqlConnection("Server=mssql-server;Database=test;User Id=test;Password=test;TrustServerCertificate=true");
+        await con.ExecuteAsync("TRUNCATE TABLE ImportData");
+
+        await con.OpenAsync();
+        using var loader = new SqlBulkCopy(con);
+        loader.DestinationTableName = "ImportData";
+        await loader.WriteToServerAsync(reader);
+    }
+
+    //--------------------------------------------------------------------------------
+    // CSV
+    //--------------------------------------------------------------------------------
+
+    private const string Content =
+        "Col1,Col2,Col3,Col4\n" +
+        "1,30,Abc,true\n" +
+        "2,,,false";
+
+    public static CsvReader CreateCsvReader() =>
+        new(new StringReader(Content), CultureInfo.InvariantCulture);
+
+    public static CsvDataReaderOption CreateCsvOption()
+    {
+        var option = new CsvDataReaderOption();
+        option.AddColumn("Col1");
+        option.AddColumn("Col3", emptyAsNull: true);
+        return option;
+    }
+
+    //--------------------------------------------------------------------------------
+    // Object
+    //--------------------------------------------------------------------------------
+
+    public static List<Data> CreateObjectList() =>
+    [
+        new() { Id = 1, Value = "A" },
+        new() { Id = 2 }
+    ];
 }

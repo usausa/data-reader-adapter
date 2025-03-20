@@ -402,3 +402,4 @@ FodyWeavers.xsd
 # Customize
 desktop.ini
 __*
+/Example/Properties/launchSettings.json

@@ -99,18 +99,19 @@ public sealed class ObjectDataReaderAdapter<T> : IDataReader
     // Value
     //--------------------------------------------------------------------------------
 
-    public bool IsDBNull(int i) => accessors[i](source.Current!) is null;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public object GetValue(int i) => accessors[i](source.Current!) ?? DBNull.Value;
+    private object? GetObjectValue(int i) => accessors[i](source.Current!);
+
+    public bool IsDBNull(int i) => GetObjectValue(i) is null;
+
+    public object GetValue(int i) => GetObjectValue(i) ?? DBNull.Value;
 
     public int GetValues(object[] values)
     {
         for (var i = 0; i < accessors.Length; i++)
         {
-            values[i] = GetValue(i);
+            values[i] = GetObjectValue(i) ?? DBNull.Value;
         }
-
         return accessors.Length;
     }
 

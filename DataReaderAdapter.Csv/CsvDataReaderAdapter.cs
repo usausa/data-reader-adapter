@@ -109,10 +109,8 @@ public sealed class CsvDataReaderAdapter : IDataReader
     // Value
     //--------------------------------------------------------------------------------
 
-    public bool IsDBNull(int i) => emptyAsNulls[i] && String.IsNullOrEmpty(reader.GetField(indexes[i]));
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public object GetValue(int i)
+    private string? GetStringValue(int i)
     {
         var value = reader.GetField(indexes[i]);
         if (!String.IsNullOrEmpty(value))
@@ -121,10 +119,14 @@ public sealed class CsvDataReaderAdapter : IDataReader
         }
         if (emptyAsNulls[i])
         {
-            return DBNull.Value;
+            return null;
         }
         return nullValues[i];
     }
+
+    public bool IsDBNull(int i) => GetStringValue(i) is null;
+
+    public object GetValue(int i) => (object?)GetStringValue(i) ?? DBNull.Value;
 
     public int GetValues(object[] values)
     {
@@ -132,7 +134,6 @@ public sealed class CsvDataReaderAdapter : IDataReader
         {
             values[i] = GetValue(i);
         }
-
         return indexes.Length;
     }
 
@@ -164,5 +165,5 @@ public sealed class CsvDataReaderAdapter : IDataReader
 
     public long GetInt64(int i) => throw new NotSupportedException();
 
-    public string GetString(int i) => throw new NotSupportedException();
+    public string GetString(int i) => GetStringValue(i) ?? string.Empty;
 }
