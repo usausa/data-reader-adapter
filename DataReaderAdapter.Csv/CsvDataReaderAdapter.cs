@@ -1,75 +1,142 @@
 namespace DataReaderAdapter;
 
 using System.Data;
+using System.Runtime.CompilerServices;
 
 using CsvHelper;
 
-// TODO
 #pragma warning disable CA1725
 public sealed class CsvDataReaderAdapter : IDataReader
 {
+    private readonly int[] indexes;
+
+    private readonly string[] names;
+
+    private readonly bool[] emptyAsNulls;
+
+    private readonly string[] nullValues;
+
     private readonly CsvReader reader;
 
-    private readonly int[] indexes;
+    //--------------------------------------------------------------------------------
+    // Property
+    //--------------------------------------------------------------------------------
 
     public int FieldCount => indexes.Length;
 
-    public int Depth => throw new NotSupportedException();
+    public int Depth => 0;
 
-    public bool IsClosed => false;
+    public bool IsClosed { get; private set; }
 
     public int RecordsAffected => -1;
 
-    public object this[int i] => throw new NotSupportedException();
+    public object this[int i] => GetValue(i);
 
-    public object this[string name] => throw new NotSupportedException();
+    public object this[string name] => GetValue(GetOrdinal(name));
 
-    public CsvDataReaderAdapter(CsvReader reader, IEnumerable<string> columns)
+    //--------------------------------------------------------------------------------
+    // Constructor
+    //--------------------------------------------------------------------------------
+
+    public CsvDataReaderAdapter(CsvDataReaderOption option, CsvReader reader)
     {
+        if (option.HasHeaderRecord)
+        {
+            reader.Read();
+            reader.ReadHeader();
+        }
+
+        indexes = new int[option.Columns.Count];
+        names = new string[option.Columns.Count];
+        emptyAsNulls = new bool[option.Columns.Count];
+        nullValues = new string[option.Columns.Count];
+        for (var i = 0; i < option.Columns.Count; i++)
+        {
+            var column = option.Columns[i];
+            indexes[i] = column.Index ?? reader.GetFieldIndex(column.Name!);
+            names[i] = column.Name ?? string.Empty;
+            emptyAsNulls[i] = String.IsNullOrEmpty(column.Fallback) && (column.EmptyAsNull ?? option.EmptyAsNull);
+            nullValues[i] = column.Fallback ?? string.Empty;
+        }
+
         this.reader = reader;
-        reader.Read();
-        reader.ReadHeader();
-        indexes = columns.Select(x => reader.GetFieldIndex(x)).ToArray();
     }
 
     public void Dispose()
     {
-        reader.Dispose();
+        Close();
     }
 
     public void Close()
     {
+        if (!IsClosed)
+        {
+            reader.Dispose();
+            IsClosed = true;
+        }
     }
 
     public bool Read() => reader.Read();
 
-    public bool NextResult() => throw new NotSupportedException();
+    public bool NextResult() => false;
 
-    public bool IsDBNull(int i) => throw new NotSupportedException();
-
-    public object GetValue(int i) => throw new NotSupportedException();
-
-    public int GetValues(object[] values)
-    {
-        for (var i = 0; i < indexes.Length; i++)
-        {
-            values[i] = reader.GetField(indexes[i])!;
-        }
-
-        return indexes.Length;
-    }
+    //--------------------------------------------------------------------------------
+    // Metadata
+    //--------------------------------------------------------------------------------
 
     public IDataReader GetData(int i) => throw new NotSupportedException();
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => throw new NotSupportedException();
+    public string GetDataTypeName(int i) => nameof(String);
 
-    public Type GetFieldType(int i) => throw new NotSupportedException();
+    public Type GetFieldType(int i) => typeof(string);
 
-    public string GetName(int i) => throw new NotSupportedException();
+    public string GetName(int i) => names[i];
 
-    public int GetOrdinal(string name) => throw new NotSupportedException();
+    public int GetOrdinal(string name)
+    {
+        for (var i = 0; i < names.Length; i++)
+        {
+            if (String.Equals(names[i], name, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+    //--------------------------------------------------------------------------------
+    // Value
+    //--------------------------------------------------------------------------------
+
+    public bool IsDBNull(int i) => emptyAsNulls[i] && String.IsNullOrEmpty(reader.GetField(indexes[i]));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public object GetValue(int i)
+    {
+        var value = reader.GetField(indexes[i]);
+        if (!String.IsNullOrEmpty(value))
+        {
+            return value;
+        }
+        if (emptyAsNulls[i])
+        {
+            return DBNull.Value;
+        }
+        return nullValues[i];
+    }
+
+    public int GetValues(object[] values)
+    {
+        for (var i = 0; i < indexes.Length; i++)
+        {
+            values[i] = GetValue(i);
+        }
+
+        return indexes.Length;
+    }
+
+    // TODO support ?
 
     public bool GetBoolean(int i) => throw new NotSupportedException();
 
