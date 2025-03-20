@@ -5,7 +5,7 @@
 [![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Object.svg)](https://www.nuget.org/packages/DataReaderAdapter.Object)
 
 ```csharp
-// CSV
+// Object
 var list = new List<Data>
 [
     new() { Id = 1, Value = "Name-1" },
