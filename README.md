@@ -29,7 +29,11 @@ await loader.WriteToServerAsync(reader);
 
 ```csharp
 // CSV
-using var csv = new CsvReader(text, CultureInfo.InvariantCulture);
+var content = 
+    "Col1,Col2,Col3\n" +
+    "1,10,Name-1\n" +
+    "2,20,\n";
+using var csv = new CsvReader(new StringReader(content), CultureInfo.InvariantCulture);
 
 // ReaderAdapter 
 var option = new CsvDataReaderOption();
