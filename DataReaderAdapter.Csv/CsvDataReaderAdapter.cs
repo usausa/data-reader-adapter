@@ -144,8 +144,6 @@ public sealed class CsvDataReaderAdapter : IDataReader
 
     public char GetChar(int i) => Char.Parse(GetStringValue(i)!);
 
-    public decimal GetDecimal(int i) => Decimal.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
-
     public short GetInt16(int i) => Int16.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
     public int GetInt32(int i) => Int32.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
@@ -155,6 +153,8 @@ public sealed class CsvDataReaderAdapter : IDataReader
     public float GetFloat(int i) => Single.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
     public double GetDouble(int i) => Double.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
+
+    public decimal GetDecimal(int i) => Decimal.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
     public DateTime GetDateTime(int i) => DateTime.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 

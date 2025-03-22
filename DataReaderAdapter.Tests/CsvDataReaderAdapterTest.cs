@@ -1,3 +1,4 @@
+// ReSharper disable UseUtf8StringLiteral
 namespace DataReaderAdapter.Tests;
 
 using System.Globalization;
@@ -67,5 +68,58 @@ public class CsvDataReaderAdapterTest
 
         // Completed
         Assert.False(reader.Read());
+    }
+
+    [Fact]
+    public void TestConvert()
+    {
+        var content =
+            "Col1\n" +
+            "true\n" +
+            "1\n" +
+            "A\n" +
+            "2000-12-31 23:59:59\n" +
+            "00000000-0000-0000-0000-000000000000\n" +
+            "00112233445566778899AABBCCDDEEFF\n" +
+            "0123456789\n";
+        using var csv = new CsvReader(new StringReader(content), CultureInfo.InvariantCulture);
+
+        var option = new CsvDataReaderOption();
+        option.AddColumn("Col1");
+
+        using var reader = new CsvDataReaderAdapter(option, csv);
+
+        // Assert
+        Assert.True(reader.Read());
+        Assert.True(reader.GetBoolean(0));
+
+        Assert.True(reader.Read());
+        Assert.Equal(1, reader.GetByte(0));
+        Assert.Equal(1, reader.GetInt16(0));
+        Assert.Equal(1, reader.GetInt32(0));
+        Assert.Equal(1, reader.GetInt64(0));
+        Assert.Equal(1, reader.GetFloat(0));
+        Assert.Equal(1, reader.GetDouble(0));
+        Assert.Equal(1, reader.GetDecimal(0));
+
+        Assert.True(reader.Read());
+        Assert.Equal('A', reader.GetChar(0));
+        Assert.Equal("A", reader.GetString(0));
+
+        Assert.True(reader.Read());
+        Assert.Equal(new DateTime(2000, 12, 31, 23, 59, 59), reader.GetDateTime(0));
+
+        Assert.True(reader.Read());
+        Assert.Equal(Guid.Empty, reader.GetGuid(0));
+
+        Assert.True(reader.Read());
+        var bytes = new byte[4];
+        reader.GetBytes(0, 4, bytes, 0, bytes.Length);
+        Assert.Equal(new byte[] { 0x44, 0x55, 0x66, 0x77 }, bytes);
+
+        Assert.True(reader.Read());
+        var chars = new char[4];
+        reader.GetChars(0, 2, chars, 0, chars.Length);
+        Assert.Equal(['2', '3', '4', '5'], chars);
     }
 }
