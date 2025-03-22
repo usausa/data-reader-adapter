@@ -1,6 +1,7 @@
 namespace DataReaderAdapter;
 
 using System.Data;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -115,33 +116,119 @@ public sealed class ObjectDataReaderAdapter<T> : IDataReader
         return accessors.Length;
     }
 
-    // TODO support ?
+    public bool GetBoolean(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is bool t ? t : Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+    }
 
-    public bool GetBoolean(int i) => throw new NotSupportedException();
+    public byte GetByte(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is byte t ? t : Convert.ToByte(value, CultureInfo.InvariantCulture);
+    }
 
-    public byte GetByte(int i) => throw new NotSupportedException();
+    public char GetChar(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is char t ? t : Convert.ToChar(value, CultureInfo.InvariantCulture);
+    }
 
-    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length) => throw new NotSupportedException();
+    public short GetInt16(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is short t ? t : Convert.ToInt16(value, CultureInfo.InvariantCulture);
+    }
 
-    public char GetChar(int i) => throw new NotSupportedException();
+    public int GetInt32(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is int t ? t : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
 
-    public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length) => throw new NotSupportedException();
+    public long GetInt64(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is long t ? t : Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    }
 
-    public DateTime GetDateTime(int i) => throw new NotSupportedException();
+    public float GetFloat(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is float t ? t : Convert.ToSingle(value, CultureInfo.InvariantCulture);
+    }
 
-    public decimal GetDecimal(int i) => throw new NotSupportedException();
+    public double GetDouble(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is double t ? t : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
 
-    public double GetDouble(int i) => throw new NotSupportedException();
+    public decimal GetDecimal(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is decimal t ? t : Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+    }
 
-    public float GetFloat(int i) => throw new NotSupportedException();
+    public DateTime GetDateTime(int i)
+    {
+        var value = GetObjectValue(i);
+        return value is DateTime t ? t : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+    }
 
-    public Guid GetGuid(int i) => throw new NotSupportedException();
+    public Guid GetGuid(int i)
+    {
+        var value = GetObjectValue(i);
+        if (value is Guid t)
+        {
+            return t;
+        }
+        if (value is string str)
+        {
+            return Guid.Parse(str, CultureInfo.InvariantCulture);
+        }
 
-    public short GetInt16(int i) => throw new NotSupportedException();
+        var name = value?.GetType().Name ?? "null";
+        throw new NotSupportedException($"Convert to Guid is not supported. type=[{name}]");
+    }
 
-    public int GetInt32(int i) => throw new NotSupportedException();
+    public string GetString(int i)
+    {
+        var value = GetObjectValue(i);
+        return value as string ?? Convert.ToString(value, CultureInfo.InvariantCulture)!;
+    }
 
-    public long GetInt64(int i) => throw new NotSupportedException();
+    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length)
+    {
+        var value = GetObjectValue(i);
+        if (value is byte[] array)
+        {
+            var count = Math.Min(length, array.Length - (int)fieldOffset);
+            if (count > 0)
+            {
+                array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
+            }
+            return count;
+        }
 
-    public string GetString(int i) => throw new NotSupportedException();
+        var name = value?.GetType().Name ?? "null";
+        throw new NotSupportedException($"Convert to Guid is not supported. type=[{name}]");
+    }
+
+    public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length)
+    {
+        var value = GetObjectValue(i);
+        if (value is char[] array)
+        {
+            var count = Math.Min(length, array.Length - (int)fieldOffset);
+            if (count > 0)
+            {
+                array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
+            }
+            return count;
+        }
+
+        var name = value?.GetType().Name ?? "null";
+        throw new NotSupportedException($"Convert to Guid is not supported. type=[{name}]");
+    }
 }

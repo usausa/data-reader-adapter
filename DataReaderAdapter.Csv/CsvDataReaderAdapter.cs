@@ -1,6 +1,7 @@
 namespace DataReaderAdapter;
 
 using System.Data;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 using CsvHelper;
@@ -137,33 +138,49 @@ public sealed class CsvDataReaderAdapter : IDataReader
         return indexes.Length;
     }
 
-    // TODO support ?
+    public bool GetBoolean(int i) => Boolean.Parse(GetStringValue(i)!);
 
-    public bool GetBoolean(int i) => throw new NotSupportedException();
+    public byte GetByte(int i) => Byte.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public byte GetByte(int i) => throw new NotSupportedException();
+    public char GetChar(int i) => Char.Parse(GetStringValue(i)!);
 
-    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length) => throw new NotSupportedException();
+    public decimal GetDecimal(int i) => Decimal.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public char GetChar(int i) => throw new NotSupportedException();
+    public short GetInt16(int i) => Int16.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length) => throw new NotSupportedException();
+    public int GetInt32(int i) => Int32.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public DateTime GetDateTime(int i) => throw new NotSupportedException();
+    public long GetInt64(int i) => Int64.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public decimal GetDecimal(int i) => throw new NotSupportedException();
+    public float GetFloat(int i) => Single.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public double GetDouble(int i) => throw new NotSupportedException();
+    public double GetDouble(int i) => Double.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public float GetFloat(int i) => throw new NotSupportedException();
+    public DateTime GetDateTime(int i) => DateTime.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
-    public Guid GetGuid(int i) => throw new NotSupportedException();
-
-    public short GetInt16(int i) => throw new NotSupportedException();
-
-    public int GetInt32(int i) => throw new NotSupportedException();
-
-    public long GetInt64(int i) => throw new NotSupportedException();
+    public Guid GetGuid(int i) => Guid.Parse(GetStringValue(i)!, CultureInfo.InvariantCulture);
 
     public string GetString(int i) => GetStringValue(i) ?? string.Empty;
+
+    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length)
+    {
+        var array = Convert.FromHexString(GetStringValue(i)!);
+        var count = Math.Min(length, array.Length - (int)fieldOffset);
+        if (count > 0)
+        {
+            array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
+        }
+        return count;
+    }
+
+    public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length)
+    {
+        var span = GetStringValue(i)!.AsSpan();
+        var count = Math.Min(length, span.Length - (int)fieldOffset);
+        if (count > 0)
+        {
+            span.Slice((int)fieldOffset, count).CopyTo(buffer);
+        }
+        return count;
+    }
 }
