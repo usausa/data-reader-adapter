@@ -176,8 +176,8 @@ internal static class DataHelper
 
     private const string Content =
         "Col1,Col2,Col3,Col4,Col5,Col6\n" +
-        "1,30,Data-1,option,true,2000 12-31 23:59:59\n" +
-        "2,,Data-2,,false,2000 12-31 23:59:59";
+        "1,30,Data-1,option,true,2000-12-31 23:59:59\n" +
+        "2,,Data-2,,false,2000-12-31 23:59:59";
 
     public static CsvReader CreateCsvReader() =>
         new(new StringReader(Content), CultureInfo.InvariantCulture);
