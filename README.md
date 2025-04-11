@@ -48,3 +48,19 @@ using var loader = new SqlBulkCopy(con);
 loader.DestinationTableName = "Data";
 await loader.WriteToServerAsync(reader);
 ```
+
+## AvroDataReaderAdapter
+
+[![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Avro.svg)](https://www.nuget.org/packages/DataReaderAdapter.Avro)
+
+```csharp
+// ReaderAdapter 
+using var reader = new AvroDataReaderAdapter(File.OpenRead("data.avro"));
+
+// BulkCopy
+await using var con = new SqlConnection(ConnectionString);
+await con.OpenAsync();
+using var loader = new SqlBulkCopy(con);
+loader.DestinationTableName = "Data";
+await loader.WriteToServerAsync(reader);
+```

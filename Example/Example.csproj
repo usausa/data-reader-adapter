@@ -16,8 +16,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DataReaderAdapter.Avro\DataReaderAdapter.Avro.csproj" />
     <ProjectReference Include="..\DataReaderAdapter.Csv\DataReaderAdapter.Csv.csproj" />
     <ProjectReference Include="..\DataReaderAdapter.Object\DataReaderAdapter.Object.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="data.avro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

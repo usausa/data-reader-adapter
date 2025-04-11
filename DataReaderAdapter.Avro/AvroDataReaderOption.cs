@@ -17,17 +17,22 @@ public sealed class AvroDataReaderOption
         return null;
     }
 
-    public void AddConverter<T>(Func<string, Type, Func<object, T>?> factory)
+    public void AddConverter<TSource, TDestination>(Func<string, Func<TSource, TDestination>?> factory)
     {
-        entries.Add((Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T), (s, t) =>
+        entries.Add((Nullable.GetUnderlyingType(typeof(TDestination)) ?? typeof(TDestination), (s, t) =>
         {
-            var f = factory(s, t);
+            if (t != typeof(TSource))
+            {
+                return null;
+            }
+
+            var f = factory(s);
             if (f is null)
             {
                 return null;
             }
 
-            return x => f(x);
+            return x => f((TSource)x);
         }));
     }
 }

@@ -1,6 +1,6 @@
 namespace DataReaderAdapter;
 
-public sealed class AvroExporter
+public sealed class AvroExporterExtensions
 {
     // TODO Converter
     // TODO Stream ?
