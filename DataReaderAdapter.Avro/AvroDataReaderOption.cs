@@ -2,23 +2,32 @@ namespace DataReaderAdapter;
 
 public sealed class AvroDataReaderOption
 {
-    private readonly List<Func<string, Type, Func<object, object?>?>> converterFactories = new();
+    private readonly List<(Type Type, Func<string, Type, Func<object, object?>?> Factory)> entries = new();
 
-    internal Func<object, object?>? ResolveConverter(string name, Type type)
+    internal (Type Type, Func<object, object?> Factory)? ResolveConverter(string name, Type type)
     {
-        foreach (var factory in converterFactories)
+        foreach (var entry in entries)
         {
-            var converter = factory(name, type);
+            var converter = entry.Factory(name, type);
             if (converter != null)
             {
-                return converter;
+                return (entry.Type, converter);
             }
         }
         return null;
     }
 
-    public void AddConverter(Func<string, Type, Func<object, object?>?> factory)
+    public void AddConverter<T>(Func<string, Type, Func<object, T>?> factory)
     {
-        converterFactories.Add(factory);
+        entries.Add((Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T), (s, t) =>
+        {
+            var f = factory(s, t);
+            if (f is null)
+            {
+                return null;
+            }
+
+            return x => f(x);
+        }));
     }
 }

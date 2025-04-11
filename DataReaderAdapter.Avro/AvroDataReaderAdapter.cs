@@ -66,9 +66,11 @@ public sealed class AvroDataReaderAdapter : IDataReader
         {
             var field = scheme.Fields[i];
             var type = ResolveType(field);
+            var converter = option.ResolveConverter(field.Name, type);
+
             names[i] = field.Name;
-            types[i] = type;
-            converters[i] = option.ResolveConverter(field.Name, type);
+            types[i] = converter?.Type ?? type;
+            converters[i] = converter?.Factory;
         }
     }
 
