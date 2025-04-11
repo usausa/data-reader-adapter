@@ -1,13 +1,30 @@
 namespace DataReaderAdapter;
 
+using System;
 using System.Data;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
+using Avro;
+using Avro.File;
+using Avro.Generic;
+
 #pragma warning disable CA1725
 public sealed class AvroDataReaderAdapter : IDataReader
 {
-    // TODO
+    private static readonly AvroDataReaderOption DefaultOption = new();
+
+    private readonly string[] names;
+
+    private readonly Type[] types;
+
+    private readonly Func<object, object?>?[] converters;
+
+    private readonly object?[] currentValues;
+
+    private readonly IFileReader<GenericRecord> reader;
+
+    private GenericRecord currentRecord = default!;
 
     //--------------------------------------------------------------------------------
     // Property
@@ -29,10 +46,63 @@ public sealed class AvroDataReaderAdapter : IDataReader
     // Constructor
     //--------------------------------------------------------------------------------
 
-    // TODO Stream, option
-    public AvroDataReaderAdapter()
+    public AvroDataReaderAdapter(Stream stream)
+        : this(DefaultOption, stream)
     {
-        FieldCount = 0;
+    }
+
+    public AvroDataReaderAdapter(AvroDataReaderOption option, Stream stream)
+    {
+        reader = DataFileReader<GenericRecord>.OpenReader(stream);
+        var scheme = (RecordSchema)reader.GetSchema();
+
+        FieldCount = scheme.Fields.Count;
+        names = new string[scheme.Fields.Count];
+        types = new Type[scheme.Fields.Count];
+        converters = new Func<object, object?>?[scheme.Fields.Count];
+        currentValues = new object?[scheme.Fields.Count];
+
+        for (var i = 0; i < scheme.Fields.Count; i++)
+        {
+            var field = scheme.Fields[i];
+            var type = ResolveType(field);
+            names[i] = field.Name;
+            types[i] = type;
+            converters[i] = option.ResolveConverter(field.Name, type);
+        }
+    }
+
+    private static Type ResolveType(Field field)
+    {
+        if (field.Schema is PrimitiveSchema primitiveSchema)
+        {
+            return ConvertType(field.Name, primitiveSchema.Tag);
+        }
+        if (field.Schema is UnionSchema unionSchema)
+        {
+            foreach (var schema in unionSchema.Schemas)
+            {
+                if ((schema is PrimitiveSchema ps) && (ps.Tag != Schema.Type.Null))
+                {
+                    return ConvertType(field.Name, ps.Tag);
+                }
+            }
+        }
+
+        throw new NotSupportedException($"Unsupported Avro type. field=[{field.Name}]");
+
+        Type ConvertType(string name, Schema.Type type) => type switch
+        {
+            Schema.Type.Boolean => typeof(bool),
+            Schema.Type.Int => typeof(int),
+            Schema.Type.Long => typeof(long),
+            Schema.Type.Float => typeof(float),
+            Schema.Type.Double => typeof(double),
+            Schema.Type.Bytes => typeof(byte[]),
+            Schema.Type.String => typeof(string),
+            Schema.Type.Fixed => typeof(byte[]),
+            _ => throw new NotSupportedException($"Unsupported Avro type. field=[{name}], type=[{type}]")
+        };
     }
 
     public void Dispose()
@@ -44,7 +114,7 @@ public sealed class AvroDataReaderAdapter : IDataReader
     {
         if (!IsClosed)
         {
-            // TODO ?
+            reader.Dispose();
             IsClosed = true;
         }
     }
@@ -53,8 +123,24 @@ public sealed class AvroDataReaderAdapter : IDataReader
     // Iterator
     //--------------------------------------------------------------------------------
 
-    // TODO Next & Next ?
-    public bool Read() => true;
+    public bool Read()
+    {
+        if (!reader.HasNext())
+        {
+            return false;
+        }
+
+        currentRecord = reader.Next();
+
+        for (var i = 0; i < names.Length; i++)
+        {
+            var value = currentRecord[names[i]];
+            var converter = converters[i];
+            currentValues[i] = converter is not null ? converter(value) : value;
+        }
+
+        return true;
+    }
 
     public bool NextResult() => false;
 
@@ -66,21 +152,21 @@ public sealed class AvroDataReaderAdapter : IDataReader
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => string.Empty; // TODOproperties[i].Name;
+    public string GetDataTypeName(int i) => types[i].Name;
 
-    public Type GetFieldType(int i) => typeof(object); // TODO properties[i].PropertyType;
+    public Type GetFieldType(int i) => types[i];
 
-    public string GetName(int i) => string.Empty; // TODO properties[i].Name;
+    public string GetName(int i) => names[i];
 
     public int GetOrdinal(string name)
     {
-        //for (var i = 0; i < properties.Length; i++)
-        //{
-        //    if (String.Equals(properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
-        //    {
-        //        return i;
-        //    }
-        //}
+        for (var i = 0; i < names.Length; i++)
+        {
+            if (String.Equals(names[i], name, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
         return -1;
     }
 
@@ -89,11 +175,7 @@ public sealed class AvroDataReaderAdapter : IDataReader
     //--------------------------------------------------------------------------------
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#pragma warning disable CA1822
-    // ReSharper disable once MemberCanBeMadeStatic.Local
-    // ReSharper disable once UnusedParameter.Local
-    private object? GetObjectValue(int i) => null; // TODO accessors[i](source.Current!);
-#pragma warning restore CA1822
+    private object? GetObjectValue(int i) => currentValues[i];
 
     public bool IsDBNull(int i) => GetObjectValue(i) is null;
 
@@ -101,13 +183,11 @@ public sealed class AvroDataReaderAdapter : IDataReader
 
     public int GetValues(object[] values)
     {
-        // TODO
-        //for (var i = 0; i < accessors.Length; i++)
-        //{
-        //    values[i] = GetObjectValue(i) ?? DBNull.Value;
-        //}
-        //return accessors.Length;
-        return 0;
+        for (var i = 0; i < names.Length; i++)
+        {
+            values[i] = GetValue(i);
+        }
+        return names.Length;
     }
 
     public bool GetBoolean(int i)
