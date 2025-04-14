@@ -254,7 +254,6 @@ public sealed class AvroDataReaderAdapter : IDataReader
 
     public Guid GetGuid(int i)
     {
-        // TODO ?
         var value = GetObjectValue(i);
         if (value is Guid t)
         {
@@ -277,7 +276,6 @@ public sealed class AvroDataReaderAdapter : IDataReader
 
     public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length)
     {
-        // TODO ?
         var value = GetObjectValue(i);
         if (value is byte[] array)
         {
@@ -295,7 +293,6 @@ public sealed class AvroDataReaderAdapter : IDataReader
 
     public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length)
     {
-        // TODO ?
         var value = GetObjectValue(i);
         if (value is char[] array)
         {
