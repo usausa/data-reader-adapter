@@ -1,4 +1,4 @@
-namespace DataToolkit;
+namespace Mofucat.DataToolkit;
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;

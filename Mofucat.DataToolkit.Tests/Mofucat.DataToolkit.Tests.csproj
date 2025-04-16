@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <RootNamespace>Mofucat.DataToolkit</RootNamespace>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
@@ -20,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataToolkit\DataToolkit.csproj" />
+    <ProjectReference Include="..\Mofucat.DataToolkit\Mofucat.DataToolkit.csproj" />
   </ItemGroup>
 
 </Project>

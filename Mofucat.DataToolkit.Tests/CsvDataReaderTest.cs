@@ -1,5 +1,5 @@
 //// ReSharper disable UseUtf8StringLiteral
-//namespace DataToolkit.Tests;
+//namespace Mofucat.DataToolkit.Tests;
 
 //using System.Globalization;
 

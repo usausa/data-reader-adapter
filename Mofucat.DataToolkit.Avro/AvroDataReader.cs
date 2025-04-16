@@ -1,26 +1,38 @@
-namespace DataToolkit;
+namespace Mofucat.DataToolkit;
 
+using System;
 using System.Data;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
+using Avro;
+using Avro.File;
+using Avro.Generic;
+
+// TODO DateTime default converter
+
 #pragma warning disable CA1725
-public sealed class ObjectDataReader<T> : IDataReader
+public sealed class AvroDataReader : IDataReader
 {
-    private static readonly ObjectDataReaderOption<T> DefaultOption = new();
+    private static readonly AvroDataReaderOption DefaultOption = new();
 
-    private readonly PropertyInfo[] properties;
+    private readonly string[] names;
 
-    private readonly Func<T, object?>[] accessors;
+    private readonly Type[] types;
 
-    private readonly IEnumerator<T> source;
+    private readonly Func<object, object?>?[] converters;
+
+    private readonly object?[] currentValues;
+
+    private readonly IFileReader<GenericRecord> reader;
+
+    private GenericRecord currentRecord = default!;
 
     //--------------------------------------------------------------------------------
     // Property
     //--------------------------------------------------------------------------------
 
-    public int FieldCount => accessors.Length;
+    public int FieldCount { get; }
 
     public int Depth => 0;
 
@@ -36,16 +48,65 @@ public sealed class ObjectDataReader<T> : IDataReader
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public ObjectDataReader(IEnumerable<T> source)
-        : this(DefaultOption, source)
+    public AvroDataReader(Stream stream)
+        : this(DefaultOption, stream)
     {
     }
 
-    public ObjectDataReader(ObjectDataReaderOption<T> option, IEnumerable<T> source)
+    public AvroDataReader(AvroDataReaderOption option, Stream stream)
     {
-        properties = option.PropertySelector().ToArray();
-        accessors = properties.Select(option.AccessorFactory).ToArray();
-        this.source = source.GetEnumerator();
+        reader = DataFileReader<GenericRecord>.OpenReader(stream);
+        var scheme = (RecordSchema)reader.GetSchema();
+
+        FieldCount = scheme.Fields.Count;
+        names = new string[scheme.Fields.Count];
+        types = new Type[scheme.Fields.Count];
+        converters = new Func<object, object?>?[scheme.Fields.Count];
+        currentValues = new object?[scheme.Fields.Count];
+
+        for (var i = 0; i < scheme.Fields.Count; i++)
+        {
+            var field = scheme.Fields[i];
+            var type = ResolveType(field);
+            var converter = option.ResolveConverter(field.Name, type);
+
+            names[i] = field.Name;
+            types[i] = converter?.Type ?? type;
+            converters[i] = converter?.Factory;
+        }
+    }
+
+    private static Type ResolveType(Field field)
+    {
+        if (field.Schema is PrimitiveSchema primitiveSchema)
+        {
+            return ConvertType(field.Name, primitiveSchema.Tag);
+        }
+        if (field.Schema is UnionSchema unionSchema)
+        {
+            foreach (var schema in unionSchema.Schemas)
+            {
+                if ((schema is PrimitiveSchema ps) && (ps.Tag != Schema.Type.Null))
+                {
+                    return ConvertType(field.Name, ps.Tag);
+                }
+            }
+        }
+
+        throw new NotSupportedException($"Unsupported Avro type. field=[{field.Name}]");
+
+        Type ConvertType(string name, Schema.Type type) => type switch
+        {
+            Schema.Type.Boolean => typeof(bool),
+            Schema.Type.Int => typeof(int),
+            Schema.Type.Long => typeof(long),
+            Schema.Type.Float => typeof(float),
+            Schema.Type.Double => typeof(double),
+            Schema.Type.Bytes => typeof(byte[]),
+            Schema.Type.String => typeof(string),
+            Schema.Type.Fixed => typeof(byte[]),
+            _ => throw new NotSupportedException($"Unsupported Avro type. field=[{name}], type=[{type}]")
+        };
     }
 
     public void Dispose()
@@ -57,7 +118,7 @@ public sealed class ObjectDataReader<T> : IDataReader
     {
         if (!IsClosed)
         {
-            source.Dispose();
+            reader.Dispose();
             IsClosed = true;
         }
     }
@@ -66,7 +127,24 @@ public sealed class ObjectDataReader<T> : IDataReader
     // Iterator
     //--------------------------------------------------------------------------------
 
-    public bool Read() => source.MoveNext();
+    public bool Read()
+    {
+        if (!reader.HasNext())
+        {
+            return false;
+        }
+
+        currentRecord = reader.Next();
+
+        for (var i = 0; i < names.Length; i++)
+        {
+            var value = currentRecord[names[i]];
+            var converter = converters[i];
+            currentValues[i] = converter is not null ? converter(value) : value;
+        }
+
+        return true;
+    }
 
     public bool NextResult() => false;
 
@@ -78,17 +156,17 @@ public sealed class ObjectDataReader<T> : IDataReader
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => properties[i].Name;
+    public string GetDataTypeName(int i) => types[i].Name;
 
-    public Type GetFieldType(int i) => properties[i].PropertyType;
+    public Type GetFieldType(int i) => types[i];
 
-    public string GetName(int i) => properties[i].Name;
+    public string GetName(int i) => names[i];
 
     public int GetOrdinal(string name)
     {
-        for (var i = 0; i < properties.Length; i++)
+        for (var i = 0; i < names.Length; i++)
         {
-            if (String.Equals(properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            if (String.Equals(names[i], name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
@@ -101,7 +179,7 @@ public sealed class ObjectDataReader<T> : IDataReader
     //--------------------------------------------------------------------------------
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private object? GetObjectValue(int i) => accessors[i](source.Current!);
+    private object? GetObjectValue(int i) => currentValues[i];
 
     public bool IsDBNull(int i) => GetObjectValue(i) is null;
 
@@ -109,11 +187,11 @@ public sealed class ObjectDataReader<T> : IDataReader
 
     public int GetValues(object[] values)
     {
-        for (var i = 0; i < accessors.Length; i++)
+        for (var i = 0; i < names.Length; i++)
         {
-            values[i] = GetObjectValue(i) ?? DBNull.Value;
+            values[i] = GetValue(i);
         }
-        return accessors.Length;
+        return names.Length;
     }
 
     public bool GetBoolean(int i)

@@ -1,6 +1,6 @@
 // ReSharper disable UseUtf8StringLiteral
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-namespace DataToolkit.Tests;
+namespace Mofucat.DataToolkit;
 
 public class ObjectDataReaderTest
 {

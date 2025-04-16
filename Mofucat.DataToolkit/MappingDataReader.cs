@@ -1,4 +1,4 @@
-namespace DataToolkit;
+namespace Mofucat.DataToolkit;
 
 public sealed class MappingDataReader
 {

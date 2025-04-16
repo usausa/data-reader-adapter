@@ -1,4 +1,4 @@
-namespace DataToolkit;
+namespace Mofucat.DataToolkit;
 
 using System.ComponentModel;
 

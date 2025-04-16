@@ -3,8 +3,8 @@
     <Project Path="Example/Example.csproj" />
   </Folder>
   <Folder Name="/Library/">
-    <Project Path="DataToolkit/DataToolkit.csproj" />
-    <Project Path="DataToolkit.Avro/DataToolkit.Avro.csproj" />
+    <Project Path="Mofucat.DataToolkit.Avro/Mofucat.DataToolkit.Avro.csproj" />
+    <Project Path="Mofucat.DataToolkit/Mofucat.DataToolkit.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
@@ -19,6 +19,6 @@
     <File Path="test.runsettings" />
   </Folder>
   <Folder Name="/Test/">
-    <Project Path="DataToolkit.Tests/DataToolkit.Tests.csproj" />
+    <Project Path="Mofucat.DataToolkit.Tests/Mofucat.DataToolkit.Tests.csproj" />
   </Folder>
 </Solution>
