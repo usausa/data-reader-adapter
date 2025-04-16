@@ -3,23 +3,22 @@
     <Project Path="Example/Example.csproj" />
   </Folder>
   <Folder Name="/Library/">
-    <Project Path="DataExportHelper.Avro/DataExportHelper.Avro.csproj" Id="2d1fce8d-3ccb-47b2-ac7a-5263cf4cd8d7" />
-    <Project Path="DataReaderAdapter.Avro/DataReaderAdapter.Avro.csproj" />
-    <Project Path="DataReaderAdapter.Csv/DataReaderAdapter.Csv.csproj" />
-    <Project Path="DataReaderAdapter.Object/DataReaderAdapter.Object.csproj" />
+    <Project Path="DataToolkit/DataToolkit.csproj" />
+    <Project Path="DataToolkit.Avro/DataToolkit.Avro.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="Analyzers.ruleset" />
+    <File Path="DataToolkit.sln.DotSettings" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
     <File Path="LICENSE" />
-    <File Path="MySqlBulkLoader.sln.DotSettings" />
     <File Path="README.md" />
+    <File Path="test.runsettings" />
   </Folder>
   <Folder Name="/Test/">
-    <Project Path="DataReaderAdapter.Tests/DataReaderAdapter.Tests.csproj" />
+    <Project Path="DataToolkit.Tests/DataToolkit.Tests.csproj" />
   </Folder>
 </Solution>

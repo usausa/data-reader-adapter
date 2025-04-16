@@ -1,4 +1,4 @@
-namespace DataReaderAdapter;
+namespace DataToolkit;
 
 public sealed class AvroDataReaderOption
 {

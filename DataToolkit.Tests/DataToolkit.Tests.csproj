@@ -20,8 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataReaderAdapter.Csv\DataReaderAdapter.Csv.csproj" />
-    <ProjectReference Include="..\DataReaderAdapter.Object\DataReaderAdapter.Object.csproj" />
+    <ProjectReference Include="..\DataToolkit\DataToolkit.csproj" />
   </ItemGroup>
 
 </Project>

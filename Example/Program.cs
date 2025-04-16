@@ -3,9 +3,9 @@ using System.CommandLine.NamingConventionBinder;
 using System.Data;
 using System.Globalization;
 
-using CsvHelper;
+//using CsvHelper;
 
-using DataReaderAdapter;
+using DataToolkit;
 
 using Microsoft.Data.SqlClient;
 
@@ -28,7 +28,7 @@ objectImportCommand.Add(new Command("my", "Load to MySQL")
 {
     Handler = CommandHandler.Create(static async () =>
     {
-        using var reader = new ObjectDataReaderAdapter<Data>(DataHelper.CreateObjectList());
+        using var reader = new ObjectDataReader<Data>(DataHelper.CreateObjectList());
         await DataHelper.ImportToMySql(reader);
     })
 });
@@ -37,7 +37,7 @@ objectImportCommand.Add(new Command("sql", "Load to SQL Server")
 {
     Handler = CommandHandler.Create(static async () =>
     {
-        using var reader = new ObjectDataReaderAdapter<Data>(DataHelper.CreateObjectList());
+        using var reader = new ObjectDataReader<Data>(DataHelper.CreateObjectList());
         await DataHelper.ImportToSql(reader);
     })
 });
@@ -51,33 +51,33 @@ objectCommand.Add(objectExportCommand);
 // Csv
 //--------------------------------------------------------------------------------
 
-var csvCommand = new Command("csv", "CSV example");
-rootCommand.Add(csvCommand);
+//var csvCommand = new Command("csv", "CSV example");
+//rootCommand.Add(csvCommand);
 
-var csvImportCommand = new Command("imp", "Import example");
-csvCommand.Add(csvImportCommand);
+//var csvImportCommand = new Command("imp", "Import example");
+//csvCommand.Add(csvImportCommand);
 
-csvImportCommand.Add(new Command("my", "Load to MySQL")
-{
-    Handler = CommandHandler.Create(static async () =>
-    {
-        // TODO fix convert ?
-        using var reader = new CsvDataReaderAdapter(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
-        await DataHelper.ImportToMySql(reader);
-    })
-});
+//csvImportCommand.Add(new Command("my", "Load to MySQL")
+//{
+//    Handler = CommandHandler.Create(static async () =>
+//    {
+//        // TODO fix convert ?
+//        using var reader = new CsvDataReader(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
+//        await DataHelper.ImportToMySql(reader);
+//    })
+//});
 
-csvImportCommand.Add(new Command("sql", "Load to SQL Server")
-{
-    Handler = CommandHandler.Create(static async () =>
-    {
-        using var reader = new CsvDataReaderAdapter(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
-        await DataHelper.ImportToSql(reader);
-    })
-});
+//csvImportCommand.Add(new Command("sql", "Load to SQL Server")
+//{
+//    Handler = CommandHandler.Create(static async () =>
+//    {
+//        using var reader = new CsvDataReader(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
+//        await DataHelper.ImportToSql(reader);
+//    })
+//});
 
-var csvExportCommand = new Command("exp", "Export example");
-csvCommand.Add(csvExportCommand);
+//var csvExportCommand = new Command("exp", "Export example");
+//csvCommand.Add(csvExportCommand);
 
 // TODO
 
@@ -95,7 +95,7 @@ avroImportCommand.Add(new Command("my", "Load to MySQL")
 {
     Handler = CommandHandler.Create(static async () =>
     {
-        using var reader = new AvroDataReaderAdapter(DataHelper.CreateAvroOption(), File.OpenRead("data.avro"));
+        using var reader = new AvroDataReader(DataHelper.CreateAvroOption(), File.OpenRead("data.avro"));
         await DataHelper.ImportToMySql(reader);
     })
 });
@@ -104,7 +104,7 @@ avroImportCommand.Add(new Command("sql", "Load to SQL Server")
 {
     Handler = CommandHandler.Create(static async () =>
     {
-        using var reader = new AvroDataReaderAdapter(DataHelper.CreateAvroOption(), File.OpenRead("data.avro"));
+        using var reader = new AvroDataReader(DataHelper.CreateAvroOption(), File.OpenRead("data.avro"));
         await DataHelper.ImportToSql(reader);
     })
 });
@@ -174,24 +174,24 @@ internal static class DataHelper
     // CSV
     //--------------------------------------------------------------------------------
 
-    private const string Content =
-        "Col1,Col2,Col3,Col4,Col5,Col6\n" +
-        "1,30,Data-1,option,true,2000-12-31 23:59:59\n" +
-        "2,,Data-2,,false,2000-12-31 23:59:59";
+    //private const string Content =
+    //    "Col1,Col2,Col3,Col4,Col5,Col6\n" +
+    //    "1,30,Data-1,option,true,2000-12-31 23:59:59\n" +
+    //    "2,,Data-2,,false,2000-12-31 23:59:59";
 
-    public static CsvReader CreateCsvReader() =>
-        new(new StringReader(Content), CultureInfo.InvariantCulture);
+    //public static CsvReader CreateCsvReader() =>
+    //    new(new StringReader(Content), CultureInfo.InvariantCulture);
 
-    public static CsvDataReaderOption CreateCsvOption()
-    {
-        var option = new CsvDataReaderOption();
-        option.AddColumn("Col1");
-        option.AddColumn("Col3");
-        option.AddColumn("Col4", emptyAsNull: true);
-        option.AddColumn("Col5");
-        option.AddColumn("Col6");
-        return option;
-    }
+    //public static CsvDataReaderOption CreateCsvOption()
+    //{
+    //    var option = new CsvDataReaderOption();
+    //    option.AddColumn("Col1");
+    //    option.AddColumn("Col3");
+    //    option.AddColumn("Col4", emptyAsNull: true);
+    //    option.AddColumn("Col5");
+    //    option.AddColumn("Col6");
+    //    return option;
+    //}
 
     //--------------------------------------------------------------------------------
     // Object

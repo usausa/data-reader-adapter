@@ -1,8 +1,8 @@
-# DataReaderAdapter
-
-## ObjectDataReaderAdapter
+# Mofucat.DataToolkit
 
 [![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Object.svg)](https://www.nuget.org/packages/DataReaderAdapter.Object)
+
+## ObjectDataReader
 
 ```csharp
 // Object
@@ -13,7 +13,7 @@ var list = new List<Data>
 ];
 
 // ReaderAdapter 
-using var reader = new ObjectDataReaderAdapter<Data>(list);
+using var reader = new ObjectDataReader<Data>(list);
 
 // BulkCopy
 await using var con = new SqlConnection(ConnectionString);
@@ -23,35 +23,15 @@ loader.DestinationTableName = "Data";
 await loader.WriteToServerAsync(reader);
 ```
 
-## CsvDataReaderAdapter
+## MappingDataReader
 
-[![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Csv.svg)](https://www.nuget.org/packages/DataReaderAdapter.Csv)
+(TODO)
 
-```csharp
-// CSV
-var content = 
-    "Col1,Col2,Col3\n" +
-    "1,10,Name-1\n" +
-    "2,20,\n";
-using var csv = new CsvReader(new StringReader(content), CultureInfo.InvariantCulture);
-
-// ReaderAdapter 
-var option = new CsvDataReaderOption();
-option.AddColumn("Col1");
-option.AddColumn("Col3", emptyAsNull: true);
-using var reader = new CsvDataReaderAdapter(option, csv);
-
-// BulkCopy
-await using var con = new SqlConnection(ConnectionString);
-await con.OpenAsync();
-using var loader = new SqlBulkCopy(con);
-loader.DestinationTableName = "Data";
-await loader.WriteToServerAsync(reader);
-```
-
-## AvroDataReaderAdapter
+# Mofucat.DataToolkit.Avro
 
 [![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Avro.svg)](https://www.nuget.org/packages/DataReaderAdapter.Avro)
+
+## AvroDataReader
 
 ```csharp
 // ReaderAdapter 
@@ -64,3 +44,7 @@ using var loader = new SqlBulkCopy(con);
 loader.DestinationTableName = "Data";
 await loader.WriteToServerAsync(reader);
 ```
+
+## AvroDataExporter
+
+(TODO)

@@ -1,4 +1,4 @@
-namespace DataReaderAdapter;
+namespace DataToolkit;
 
 using System;
 using System.Data;
@@ -12,7 +12,7 @@ using Avro.Generic;
 // TODO DateTime default converter
 
 #pragma warning disable CA1725
-public sealed class AvroDataReaderAdapter : IDataReader
+public sealed class AvroDataReader : IDataReader
 {
     private static readonly AvroDataReaderOption DefaultOption = new();
 
@@ -48,12 +48,12 @@ public sealed class AvroDataReaderAdapter : IDataReader
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public AvroDataReaderAdapter(Stream stream)
+    public AvroDataReader(Stream stream)
         : this(DefaultOption, stream)
     {
     }
 
-    public AvroDataReaderAdapter(AvroDataReaderOption option, Stream stream)
+    public AvroDataReader(AvroDataReaderOption option, Stream stream)
     {
         reader = DataFileReader<GenericRecord>.OpenReader(stream);
         var scheme = (RecordSchema)reader.GetSchema();

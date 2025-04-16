@@ -1,8 +1,8 @@
 // ReSharper disable UseUtf8StringLiteral
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-namespace DataReaderAdapter.Tests;
+namespace DataToolkit.Tests;
 
-public class ObjectDataReaderAdapterTest
+public class ObjectDataReaderTest
 {
     [Fact]
     public void TestBasic()
@@ -14,7 +14,7 @@ public class ObjectDataReaderAdapterTest
             new() { IntValue = 3, NullableIntValue = 30 }
         };
 
-        using var reader = new ObjectDataReaderAdapter<Data>(list);
+        using var reader = new ObjectDataReader<Data>(list);
 
         // Assert
         Assert.Equal(3, reader.FieldCount);
@@ -79,7 +79,7 @@ public class ObjectDataReaderAdapterTest
             }
         };
 
-        using var reader = new ObjectDataReaderAdapter<ConvertData>(list);
+        using var reader = new ObjectDataReader<ConvertData>(list);
 
         // Assert
         Assert.True(reader.Read());

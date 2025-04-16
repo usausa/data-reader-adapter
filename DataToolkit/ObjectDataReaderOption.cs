@@ -1,4 +1,4 @@
-namespace DataReaderAdapter;
+namespace DataToolkit;
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;

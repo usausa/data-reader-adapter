@@ -1,4 +1,4 @@
-namespace DataReaderAdapter;
+namespace DataToolkit;
 
 using System.Data;
 using System.Globalization;
@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable CA1725
-public sealed class ObjectDataReaderAdapter<T> : IDataReader
+public sealed class ObjectDataReader<T> : IDataReader
 {
     private static readonly ObjectDataReaderOption<T> DefaultOption = new();
 
@@ -36,12 +36,12 @@ public sealed class ObjectDataReaderAdapter<T> : IDataReader
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public ObjectDataReaderAdapter(IEnumerable<T> source)
+    public ObjectDataReader(IEnumerable<T> source)
         : this(DefaultOption, source)
     {
     }
 
-    public ObjectDataReaderAdapter(ObjectDataReaderOption<T> option, IEnumerable<T> source)
+    public ObjectDataReader(ObjectDataReaderOption<T> option, IEnumerable<T> source)
     {
         properties = option.PropertySelector().ToArray();
         accessors = properties.Select(option.AccessorFactory).ToArray();
