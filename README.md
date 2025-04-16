@@ -1,6 +1,6 @@
 # Mofucat.DataToolkit
 
-[![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Object.svg)](https://www.nuget.org/packages/DataReaderAdapter.Object)
+[![NuGet](https://img.shields.io/nuget/v/Mofucat.DataToolkit.svg)](https://www.nuget.org/packages/Mofucat.DataToolkit)
 
 ## ObjectDataReader
 
@@ -29,7 +29,7 @@ await loader.WriteToServerAsync(reader);
 
 # Mofucat.DataToolkit.Avro
 
-[![NuGet](https://img.shields.io/nuget/v/DataReaderAdapter.Avro.svg)](https://www.nuget.org/packages/DataReaderAdapter.Avro)
+[![NuGet](https://img.shields.io/nuget/v/Mofucat.DataToolkit.Avro.svg)](https://www.nuget.org/packages/Mofucat.DataToolkit.Avro)
 
 ## AvroDataReader
 

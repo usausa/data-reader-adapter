@@ -1,4 +1,4 @@
-namespace DataExportHelper;
+namespace DataToolkit;
 
 using System.ComponentModel;
 

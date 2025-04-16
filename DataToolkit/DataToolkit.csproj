@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Mofucat.DataToolkit.Object</PackageId>
-    <Title>DataToolkit.Object</Title>
+    <PackageId>Mofucat.DataToolkit</PackageId>
+    <Title>DataToolkit</Title>
     <Description>DataReader adapter</Description>
     <PackageTags>datareader bulkcopy</PackageTags>
   </PropertyGroup>

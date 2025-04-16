@@ -4,6 +4,8 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
+// TODO Default selector with attribute
+
 public sealed class ObjectDataReaderOption<T>
 {
     private static readonly ConcurrentDictionary<PropertyInfo, Func<T, object?>> Accessors = new();
