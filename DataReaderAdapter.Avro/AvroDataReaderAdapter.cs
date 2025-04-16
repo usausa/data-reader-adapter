@@ -9,6 +9,8 @@ using Avro;
 using Avro.File;
 using Avro.Generic;
 
+// TODO DateTime default converter
+
 #pragma warning disable CA1725
 public sealed class AvroDataReaderAdapter : IDataReader
 {
