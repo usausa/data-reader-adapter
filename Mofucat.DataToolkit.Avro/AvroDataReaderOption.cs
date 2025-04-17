@@ -1,5 +1,7 @@
 namespace Mofucat.DataToolkit;
 
+// TODO DateTime default converter
+
 public sealed class AvroDataReaderOption
 {
     private readonly List<(Type Type, Func<string, Type, Func<object, object?>?> Factory)> entries = new();

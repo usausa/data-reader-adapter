@@ -1,6 +1,7 @@
 namespace Mofucat.DataToolkit;
 
 using System;
+using System.Buffers;
 using System.Data;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -9,22 +10,27 @@ using Avro;
 using Avro.File;
 using Avro.Generic;
 
-// TODO DateTime default converter
-
 #pragma warning disable CA1725
 public sealed class AvroDataReader : IDataReader
 {
     private static readonly AvroDataReaderOption DefaultOption = new();
 
-    private readonly string[] names;
+    private struct Entry
+    {
+        public string Name;
 
-    private readonly Type[] types;
+        public Type Type;
 
-    private readonly Func<object, object?>?[] converters;
-
-    private readonly object?[] currentValues;
+        public Func<object, object?>? Converter;
+    }
 
     private readonly IFileReader<GenericRecord> reader;
+
+    private readonly int fieldCount;
+
+    private Entry[] entries;
+
+    private object?[] currentValues;
 
     private GenericRecord currentRecord = default!;
 
@@ -32,7 +38,7 @@ public sealed class AvroDataReader : IDataReader
     // Property
     //--------------------------------------------------------------------------------
 
-    public int FieldCount { get; }
+    public int FieldCount => fieldCount;
 
     public int Depth => 0;
 
@@ -58,11 +64,9 @@ public sealed class AvroDataReader : IDataReader
         reader = DataFileReader<GenericRecord>.OpenReader(stream);
         var scheme = (RecordSchema)reader.GetSchema();
 
-        FieldCount = scheme.Fields.Count;
-        names = new string[scheme.Fields.Count];
-        types = new Type[scheme.Fields.Count];
-        converters = new Func<object, object?>?[scheme.Fields.Count];
-        currentValues = new object?[scheme.Fields.Count];
+        fieldCount = scheme.Fields.Count;
+        entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
+        currentValues = ArrayPool<object?>.Shared.Rent(fieldCount);
 
         for (var i = 0; i < scheme.Fields.Count; i++)
         {
@@ -70,9 +74,10 @@ public sealed class AvroDataReader : IDataReader
             var type = ResolveType(field);
             var converter = option.ResolveConverter(field.Name, type);
 
-            names[i] = field.Name;
-            types[i] = converter?.Type ?? type;
-            converters[i] = converter?.Factory;
+            ref var entry = ref entries[i];
+            entry.Name = field.Name;
+            entry.Type = converter?.Type ?? type;
+            entry.Converter = converter?.Factory;
         }
     }
 
@@ -111,16 +116,30 @@ public sealed class AvroDataReader : IDataReader
 
     public void Dispose()
     {
-        Close();
+        if (IsClosed)
+        {
+            return;
+        }
+
+        reader.Dispose();
+
+        if (entries.Length > 0)
+        {
+            ArrayPool<Entry>.Shared.Return(entries, true);
+            entries = [];
+        }
+        if (currentValues.Length > 0)
+        {
+            ArrayPool<object?>.Shared.Return(currentValues, true);
+            currentValues = [];
+        }
+
+        IsClosed = true;
     }
 
     public void Close()
     {
-        if (!IsClosed)
-        {
-            reader.Dispose();
-            IsClosed = true;
-        }
+        Dispose();
     }
 
     //--------------------------------------------------------------------------------
@@ -136,10 +155,11 @@ public sealed class AvroDataReader : IDataReader
 
         currentRecord = reader.Next();
 
-        for (var i = 0; i < names.Length; i++)
+        for (var i = 0; i < fieldCount; i++)
         {
-            var value = currentRecord[names[i]];
-            var converter = converters[i];
+            ref var entry = ref entries[i];
+            var value = currentRecord[entry.Name];
+            var converter = entry.Converter;
             currentValues[i] = converter is not null ? converter(value) : value;
         }
 
@@ -156,17 +176,30 @@ public sealed class AvroDataReader : IDataReader
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => types[i].Name;
+    public string GetDataTypeName(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Type.Name;
+    }
 
-    public Type GetFieldType(int i) => types[i];
+    public Type GetFieldType(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Type;
+    }
 
-    public string GetName(int i) => names[i];
+    public string GetName(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Name;
+    }
 
     public int GetOrdinal(string name)
     {
-        for (var i = 0; i < names.Length; i++)
+        for (var i = 0; i < fieldCount; i++)
         {
-            if (String.Equals(names[i], name, StringComparison.OrdinalIgnoreCase))
+            ref var entry = ref entries[i];
+            if (String.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
@@ -187,11 +220,11 @@ public sealed class AvroDataReader : IDataReader
 
     public int GetValues(object[] values)
     {
-        for (var i = 0; i < names.Length; i++)
+        for (var i = 0; i < fieldCount; i++)
         {
-            values[i] = GetValue(i);
+            values[i] = GetObjectValue(i) ?? DBNull.Value;
         }
-        return names.Length;
+        return fieldCount;
     }
 
     public bool GetBoolean(int i)

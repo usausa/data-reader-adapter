@@ -3,6 +3,7 @@ namespace Mofucat.DataToolkit;
 using System.Data.Common;
 using System.Data;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 using Avro.File;
 using Avro.Generic;
@@ -31,11 +32,22 @@ public sealed class AvroDataExporter
         this.con = con;
     }
 
+#if NET9_0_OR_GREATER
+    [OverloadResolutionPriority(1)]
+#endif
     public Task ExportAsync(Stream stream, FormattableString sql) =>
         ExportInternalAsync(stream, sql.Format, sql.GetArguments());
 
+#if NET9_0_OR_GREATER
+    [OverloadResolutionPriority(0)]
+#endif
+    public Task ExportAsync(Stream stream, string sql, params object[] arguments) =>
+        ExportInternalAsync(stream, sql, arguments);
+
+#if !NET9_0_OR_GREATER
     public Task ExportAsync(Stream stream, RawString sql, params object[] arguments) =>
         ExportInternalAsync(stream, sql.Value, arguments);
+#endif
 
     private async Task ExportInternalAsync(
         Stream stream,

@@ -1,8 +1,8 @@
 namespace Mofucat.DataToolkit;
 
+using System.Buffers;
 using System.Data;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable CA1725
@@ -10,17 +10,26 @@ public sealed class ObjectDataReader<T> : IDataReader
 {
     private static readonly ObjectDataReaderOption<T> DefaultOption = new();
 
-    private readonly PropertyInfo[] properties;
+    private struct Entry
+    {
+        public string Name;
 
-    private readonly Func<T, object?>[] accessors;
+        public Type Type;
+
+        public Func<T, object?> Accessor;
+    }
 
     private readonly IEnumerator<T> source;
+
+    private readonly int fieldCount;
+
+    private Entry[] entries;
 
     //--------------------------------------------------------------------------------
     // Property
     //--------------------------------------------------------------------------------
 
-    public int FieldCount => accessors.Length;
+    public int FieldCount => fieldCount;
 
     public int Depth => 0;
 
@@ -43,23 +52,44 @@ public sealed class ObjectDataReader<T> : IDataReader
 
     public ObjectDataReader(ObjectDataReaderOption<T> option, IEnumerable<T> source)
     {
-        properties = option.PropertySelector().ToArray();
-        accessors = properties.Select(option.AccessorFactory).ToArray();
+        var properties = option.PropertySelector().ToArray();
+        fieldCount = properties.Length;
+        entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
+
+        for (var i = 0; i < properties.Length; i++)
+        {
+            var property = properties[i];
+
+            ref var entry = ref entries[i];
+            entry.Name = property.Name;
+            entry.Type = property.PropertyType;
+            entry.Accessor = option.AccessorFactory(property);
+        }
+
         this.source = source.GetEnumerator();
     }
 
     public void Dispose()
     {
-        Close();
+        if (IsClosed)
+        {
+            return;
+        }
+
+        source.Dispose();
+
+        if (entries.Length > 0)
+        {
+            ArrayPool<Entry>.Shared.Return(entries, true);
+            entries = [];
+        }
+
+        IsClosed = true;
     }
 
     public void Close()
     {
-        if (!IsClosed)
-        {
-            source.Dispose();
-            IsClosed = true;
-        }
+        Dispose();
     }
 
     //--------------------------------------------------------------------------------
@@ -78,17 +108,30 @@ public sealed class ObjectDataReader<T> : IDataReader
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => properties[i].Name;
+    public string GetDataTypeName(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Type.Name;
+    }
 
-    public Type GetFieldType(int i) => properties[i].PropertyType;
+    public Type GetFieldType(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Type;
+    }
 
-    public string GetName(int i) => properties[i].Name;
+    public string GetName(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Name;
+    }
 
     public int GetOrdinal(string name)
     {
-        for (var i = 0; i < properties.Length; i++)
+        for (var i = 0; i < fieldCount; i++)
         {
-            if (String.Equals(properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            ref var entry = ref entries[i];
+            if (String.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
@@ -101,7 +144,11 @@ public sealed class ObjectDataReader<T> : IDataReader
     //--------------------------------------------------------------------------------
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private object? GetObjectValue(int i) => accessors[i](source.Current!);
+    private object? GetObjectValue(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.Accessor(source.Current!);
+    }
 
     public bool IsDBNull(int i) => GetObjectValue(i) is null;
 
@@ -109,11 +156,11 @@ public sealed class ObjectDataReader<T> : IDataReader
 
     public int GetValues(object[] values)
     {
-        for (var i = 0; i < accessors.Length; i++)
+        for (var i = 0; i < fieldCount; i++)
         {
             values[i] = GetObjectValue(i) ?? DBNull.Value;
         }
-        return accessors.Length;
+        return fieldCount;
     }
 
     public bool GetBoolean(int i)

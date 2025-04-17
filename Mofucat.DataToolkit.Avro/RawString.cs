@@ -1,3 +1,4 @@
+#if !NET9_0_OR_GREATER
 namespace Mofucat.DataToolkit;
 
 using System.ComponentModel;
@@ -20,3 +21,4 @@ public readonly struct RawString
 #pragma warning restore CA2225
 }
 #pragma warning restore CA1815
+#endif
