@@ -7,7 +7,7 @@ using System.Data;
 #pragma warning disable CA1725
 public sealed class MappingDataReader : IDataReader
 {
-    private struct Mapping
+    private struct Entry
     {
         public readonly int SourceIndex;
 
@@ -16,17 +16,21 @@ public sealed class MappingDataReader : IDataReader
         public readonly Func<object, object>? Converter;
     }
 
-    private Mapping[] mappings;
+    private readonly IDataReader source;
+
+    private readonly int fieldCount;
+
+    private Entry[] entries;
 
     //--------------------------------------------------------------------------------
     // Property
     //--------------------------------------------------------------------------------
 
-    public int FieldCount => throw new NotImplementedException();
+    public int FieldCount => fieldCount;
 
-    public int Depth => throw new NotImplementedException();
+    public int Depth => source.Depth;
 
-    public bool IsClosed => throw new NotImplementedException();
+    public bool IsClosed { get; private set; }
 
     public int RecordsAffected => -1;
 
@@ -38,41 +42,47 @@ public sealed class MappingDataReader : IDataReader
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public MappingDataReader()
+    public MappingDataReader(IDataReader source)
     {
-        mappings = ArrayPool<Mapping>.Shared.Rent(1);
+        // TODO
+        this.source = source;
+        fieldCount = source.FieldCount;
+        entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
+
+        // TODO
     }
 
     public void Dispose()
     {
-        // TODO source
-        //reader.Dispose();
-        if (mappings.Length > 0)
+        if (IsClosed)
         {
-            ArrayPool<Mapping>.Shared.Return(mappings, true);
-            mappings = [];
+            return;
         }
+
+        source.Close();
+        source.Dispose();
+
+        if (entries.Length > 0)
+        {
+            ArrayPool<Entry>.Shared.Return(entries, true);
+            entries = [];
+        }
+
+        IsClosed = true;
     }
 
     public void Close()
     {
-        // TODO source
-        //reader.Close();
+        Dispose();
     }
 
     //--------------------------------------------------------------------------------
     // Iterator
     //--------------------------------------------------------------------------------
 
-    public bool Read()
-    {
-        throw new NotImplementedException();
-    }
+    public bool Read() => source.Read();
 
-    public bool NextResult()
-    {
-        throw new NotImplementedException();
-    }
+    public bool NextResult() => source.NextResult();
 
     //--------------------------------------------------------------------------------
     // Metadata
