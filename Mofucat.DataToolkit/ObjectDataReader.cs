@@ -1,5 +1,6 @@
 namespace Mofucat.DataToolkit;
 
+using System;
 using System.Buffers;
 using System.Data;
 using System.Globalization;
@@ -130,8 +131,7 @@ public sealed class ObjectDataReader<T> : IDataReader
     {
         for (var i = 0; i < fieldCount; i++)
         {
-            ref var entry = ref entries[i];
-            if (String.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase))
+            if (String.Equals(GetName(i), name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
@@ -150,7 +150,7 @@ public sealed class ObjectDataReader<T> : IDataReader
         return entry.Accessor(source.Current!);
     }
 
-    public bool IsDBNull(int i) => GetObjectValue(i) is null;
+    public bool IsDBNull(int i) => GetObjectValue(i) is null or DBNull;
 
     public object GetValue(int i) => GetObjectValue(i) ?? DBNull.Value;
 

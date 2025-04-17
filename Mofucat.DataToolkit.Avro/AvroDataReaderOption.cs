@@ -11,7 +11,7 @@ public sealed class AvroDataReaderOption
         foreach (var entry in entries)
         {
             var converter = entry.Factory(name, type);
-            if (converter != null)
+            if (converter is not null)
             {
                 return (entry.Type, converter);
             }

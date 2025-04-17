@@ -198,8 +198,7 @@ public sealed class AvroDataReader : IDataReader
     {
         for (var i = 0; i < fieldCount; i++)
         {
-            ref var entry = ref entries[i];
-            if (String.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase))
+            if (String.Equals(GetName(i), name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }

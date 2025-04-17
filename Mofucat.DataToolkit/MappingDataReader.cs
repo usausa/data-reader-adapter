@@ -9,11 +9,11 @@ public sealed class MappingDataReader : IDataReader
 {
     private struct Entry
     {
-        public readonly int SourceIndex;
+        public int SourceIndex;
 
-        public readonly Type? ConvertType;
+        public Type? ConvertType;
 
-        public readonly Func<object, object>? Converter;
+        public Func<object, object>? Converter;
     }
 
     private readonly IDataReader source;
@@ -50,6 +50,13 @@ public sealed class MappingDataReader : IDataReader
         entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
 
         // TODO
+        for (var i = 0; i < fieldCount; i++)
+        {
+            ref var entry = ref entries[i];
+            entry.SourceIndex = i;
+            entry.ConvertType = null;
+            entry.Converter = null;
+        }
     }
 
     public void Dispose()
@@ -92,15 +99,34 @@ public sealed class MappingDataReader : IDataReader
 
     public DataTable GetSchemaTable() => throw new NotSupportedException();
 
-    public string GetDataTypeName(int i) => throw new NotImplementedException();
+    public string GetDataTypeName(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.ConvertType?.Name ?? source.GetDataTypeName(entry.SourceIndex);
+    }
 
-    public Type GetFieldType(int i) => throw new NotImplementedException();
+    public Type GetFieldType(int i)
+    {
+        ref var entry = ref entries[i];
+        return entry.ConvertType ?? source.GetFieldType(entry.SourceIndex);
+    }
 
-    public string GetName(int i) => throw new NotImplementedException();
+    public string GetName(int i)
+    {
+        ref var entry = ref entries[i];
+        return source.GetName(entry.SourceIndex);
+    }
 
     public int GetOrdinal(string name)
     {
-        throw new NotImplementedException();
+        for (var i = 0; i < fieldCount; i++)
+        {
+            if (String.Equals(GetName(i), name, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     //--------------------------------------------------------------------------------
@@ -109,88 +135,157 @@ public sealed class MappingDataReader : IDataReader
 
     public bool IsDBNull(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return source.IsDBNull(entry.SourceIndex);
     }
 
     public object GetValue(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetValue(entry.SourceIndex);
     }
 
     public int GetValues(object[] values)
     {
-        throw new NotImplementedException();
+        for (var i = 0; i < fieldCount; i++)
+        {
+            ref var entry = ref entries[i];
+            values[i] = entry.Converter is not null
+                ? entry.Converter(source.GetValue(entry.SourceIndex))
+                : source.GetValue(entry.SourceIndex);
+        }
+        return fieldCount;
     }
-
-    // TODO Optimize？ source equals? / without convert typed or with cast convert ?
 
     public bool GetBoolean(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (bool)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetBoolean(entry.SourceIndex);
     }
 
     public byte GetByte(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (byte)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetByte(entry.SourceIndex);
     }
 
     public char GetChar(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (char)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetChar(entry.SourceIndex);
     }
 
     public short GetInt16(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (short)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetInt16(entry.SourceIndex);
     }
 
     public int GetInt32(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (int)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetInt32(entry.SourceIndex);
     }
 
     public long GetInt64(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (long)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetInt64(entry.SourceIndex);
     }
 
     public float GetFloat(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (float)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetFloat(entry.SourceIndex);
     }
 
     public double GetDouble(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (double)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetDouble(entry.SourceIndex);
     }
 
     public decimal GetDecimal(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (decimal)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetDecimal(entry.SourceIndex);
     }
 
     public DateTime GetDateTime(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (DateTime)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetDateTime(entry.SourceIndex);
     }
 
     public Guid GetGuid(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (Guid)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetGuid(entry.SourceIndex);
     }
 
     public string GetString(int i)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        return entry.Converter is not null
+            ? (string)entry.Converter(source.GetValue(entry.SourceIndex))
+            : source.GetString(entry.SourceIndex);
     }
 
-    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length)
+    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        if (entry.Converter is not null)
+        {
+            var array = (byte[])entry.Converter(source.GetValue(entry.SourceIndex));
+            var count = Math.Min(length, array.Length - (int)fieldOffset);
+            if (count > 0)
+            {
+                array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
+            }
+            return count;
+        }
+
+        return source.GetBytes(entry.SourceIndex, fieldOffset, buffer, bufferOffset, length);
     }
 
-    public long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length)
+    public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length)
     {
-        throw new NotImplementedException();
+        ref var entry = ref entries[i];
+        if (entry.Converter is not null)
+        {
+            var array = (char[])entry.Converter(source.GetValue(entry.SourceIndex));
+            var count = Math.Min(length, array.Length - (int)fieldOffset);
+            if (count > 0)
+            {
+                array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
+            }
+            return count;
+        }
+
+        return source.GetChars(entry.SourceIndex, fieldOffset, buffer, bufferOffset, length);
     }
 }
