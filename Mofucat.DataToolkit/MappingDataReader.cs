@@ -42,20 +42,69 @@ public sealed class MappingDataReader : IDataReader
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public MappingDataReader(IDataReader source)
+    public MappingDataReader(MappingDataReaderOption option, IDataReader source)
     {
-        // TODO
         this.source = source;
-        fieldCount = source.FieldCount;
-        entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
 
-        // TODO
+        if (option.Columns is null)
+        {
+            fieldCount = source.FieldCount;
+            entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
+            for (var i = 0; i < fieldCount; i++)
+            {
+                ref var entry = ref entries[i];
+                entry.SourceIndex = i;
+                entry.ConvertType = null;
+                entry.Converter = null;
+            }
+        }
+        else
+        {
+            fieldCount = option.Columns.Count;
+            entries = ArrayPool<Entry>.Shared.Rent(fieldCount);
+            for (var i = 0; i < fieldCount; i++)
+            {
+                var column = option.Columns[i];
+
+                ref var entry = ref entries[i];
+                if (column.Index is not null)
+                {
+                    entry.SourceIndex = column.Index.Value;
+                }
+                else
+                {
+                    if (column.Name is null)
+                    {
+                        throw new ArgumentException("Column name is required.");
+                    }
+
+                    var index = source.GetOrdinal(column.Name);
+                    if (index < 0)
+                    {
+                        throw new ArgumentException($"Column '{column.Name}' not found.");
+                    }
+
+                    entry.SourceIndex = index;
+                }
+
+                entry.ConvertType = column.ConvertType;
+                entry.Converter = column.Converter;
+            }
+        }
+
         for (var i = 0; i < fieldCount; i++)
         {
             ref var entry = ref entries[i];
-            entry.SourceIndex = i;
-            entry.ConvertType = null;
-            entry.Converter = null;
+
+            if (entry.ConvertType is null)
+            {
+                var sourceType = source.GetFieldType(entry.SourceIndex);
+                if (option.TypeConverters?.TryGetValue(sourceType, out var converter) ?? false)
+                {
+                    entry.ConvertType = converter.ConvertType;
+                    entry.Converter = converter.Converter;
+                }
+            }
         }
     }
 
