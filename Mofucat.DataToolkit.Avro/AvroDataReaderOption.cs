@@ -1,15 +1,14 @@
 namespace Mofucat.DataToolkit;
 
-// TODO DateTime default converter
-
 public sealed class AvroDataReaderOption
 {
     private readonly List<(Type Type, Func<string, Type, Func<object, object?>?> Factory)> entries = new();
 
     internal (Type Type, Func<object, object?> Factory)? ResolveConverter(string name, Type type)
     {
-        foreach (var entry in entries)
+        for (var i = entries.Count - 1; i >= 0; i--)
         {
+            var entry = entries[i];
             var converter = entry.Factory(name, type);
             if (converter is not null)
             {
@@ -19,7 +18,7 @@ public sealed class AvroDataReaderOption
         return null;
     }
 
-    public void AddConverter<TSource, TDestination>(Func<string, Func<TSource, TDestination>?> factory)
+    public AvroDataReaderOption AddConverter<TSource, TDestination>(Func<string, Func<TSource, TDestination>?> factory)
     {
         entries.Add((Nullable.GetUnderlyingType(typeof(TDestination)) ?? typeof(TDestination), (s, t) =>
         {
@@ -36,5 +35,19 @@ public sealed class AvroDataReaderOption
 
             return x => f((TSource)x);
         }));
+        return this;
+    }
+
+    public AvroDataReaderOption ClearConverters()
+    {
+        entries.Clear();
+        return this;
+    }
+
+    public static AvroDataReaderOption OfDefault()
+    {
+        var option = new AvroDataReaderOption();
+        option.AddConverter<long, DateTime>(static _ => static x => new DateTime(x, DateTimeKind.Utc).ToLocalTime());
+        return option;
     }
 }
