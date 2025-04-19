@@ -210,85 +210,82 @@ public sealed class AvroDataReader : IDataReader
     // Value
     //--------------------------------------------------------------------------------
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private object? GetObjectValue(int i) => currentValues[i];
+    public bool IsDBNull(int i) => currentValues[i] is null or DBNull;
 
-    public bool IsDBNull(int i) => GetObjectValue(i) is null;
-
-    public object GetValue(int i) => GetObjectValue(i) ?? DBNull.Value;
+    public object GetValue(int i) => currentValues[i] ?? DBNull.Value;
 
     public int GetValues(object[] values)
     {
         for (var i = 0; i < fieldCount; i++)
         {
-            values[i] = GetObjectValue(i) ?? DBNull.Value;
+            values[i] = currentValues[i] ?? DBNull.Value;
         }
         return fieldCount;
     }
 
     public bool GetBoolean(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is bool t ? t : Convert.ToBoolean(value, CultureInfo.InvariantCulture);
     }
 
     public byte GetByte(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is byte t ? t : Convert.ToByte(value, CultureInfo.InvariantCulture);
     }
 
     public char GetChar(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is char t ? t : Convert.ToChar(value, CultureInfo.InvariantCulture);
     }
 
     public short GetInt16(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is short t ? t : Convert.ToInt16(value, CultureInfo.InvariantCulture);
     }
 
     public int GetInt32(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is int t ? t : Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
     public long GetInt64(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is long t ? t : Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
     public float GetFloat(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is float t ? t : Convert.ToSingle(value, CultureInfo.InvariantCulture);
     }
 
     public double GetDouble(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is double t ? t : Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
 
     public decimal GetDecimal(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is decimal t ? t : Convert.ToDecimal(value, CultureInfo.InvariantCulture);
     }
 
     public DateTime GetDateTime(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value is DateTime t ? t : Convert.ToDateTime(value, CultureInfo.InvariantCulture);
     }
 
     public Guid GetGuid(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         if (value is Guid t)
         {
             return t;
@@ -304,13 +301,13 @@ public sealed class AvroDataReader : IDataReader
 
     public string GetString(int i)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         return value as string ?? Convert.ToString(value, CultureInfo.InvariantCulture)!;
     }
 
     public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         if (value is byte[] array)
         {
             var count = Math.Min(length, array.Length - (int)fieldOffset);
@@ -327,7 +324,7 @@ public sealed class AvroDataReader : IDataReader
 
     public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length)
     {
-        var value = GetObjectValue(i);
+        var value = currentValues[i];
         if (value is char[] array)
         {
             var count = Math.Min(length, array.Length - (int)fieldOffset);

@@ -8,7 +8,7 @@ public sealed class ObjectDataReaderOption<T>
 {
     private static readonly PropertyInfo[] DefaultSelector =
         typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(static x => x.CanRead && (x.GetCustomAttribute<DataIgnoreAttribute>() is not null))
+            .Where(static x => x.CanRead && (x.GetCustomAttribute<DataIgnoreAttribute>() is null))
             .Select(static (x, i) =>
             {
                 var order = x.GetCustomAttribute<DataColumnAttribute>()?.Order ?? Int32.MaxValue;

@@ -22,6 +22,8 @@ public sealed class MappingDataReader : IDataReader
 
     private Entry[] entries;
 
+    private object?[] currentValues;
+
     //--------------------------------------------------------------------------------
     // Property
     //--------------------------------------------------------------------------------
@@ -106,6 +108,8 @@ public sealed class MappingDataReader : IDataReader
                 }
             }
         }
+
+        currentValues = ArrayPool<object?>.Shared.Rent(fieldCount);
     }
 
     public void Dispose()
@@ -123,6 +127,11 @@ public sealed class MappingDataReader : IDataReader
             ArrayPool<Entry>.Shared.Return(entries, true);
             entries = [];
         }
+        if (currentValues.Length > 0)
+        {
+            ArrayPool<object?>.Shared.Return(currentValues, true);
+            currentValues = [];
+        }
 
         IsClosed = true;
     }
@@ -136,7 +145,23 @@ public sealed class MappingDataReader : IDataReader
     // Iterator
     //--------------------------------------------------------------------------------
 
-    public bool Read() => source.Read();
+    public bool Read()
+    {
+        if (!source.Read())
+        {
+            return false;
+        }
+
+        for (var i = 0; i < fieldCount; i++)
+        {
+            ref var entry = ref entries[i];
+            var value = source.GetValue(entry.SourceIndex);
+            var converter = entry.Converter;
+            currentValues[i] = converter is not null ? converter(value) : value;
+        }
+
+        return true;
+    }
 
     public bool NextResult() => source.NextResult();
 
@@ -182,159 +207,62 @@ public sealed class MappingDataReader : IDataReader
     // Value
     //--------------------------------------------------------------------------------
 
-    public bool IsDBNull(int i)
-    {
-        ref var entry = ref entries[i];
-        return source.IsDBNull(entry.SourceIndex);
-    }
+    public bool IsDBNull(int i) => currentValues[i] is null or DBNull;
 
-    public object GetValue(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetValue(entry.SourceIndex);
-    }
+    public object GetValue(int i) => currentValues[i] ?? DBNull.Value;
 
     public int GetValues(object[] values)
     {
         for (var i = 0; i < fieldCount; i++)
         {
-            ref var entry = ref entries[i];
-            values[i] = entry.Converter is not null
-                ? entry.Converter(source.GetValue(entry.SourceIndex))
-                : source.GetValue(entry.SourceIndex);
+            values[i] = currentValues[i] ?? DBNull.Value;
         }
         return fieldCount;
     }
 
-    public bool GetBoolean(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (bool)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetBoolean(entry.SourceIndex);
-    }
+    public bool GetBoolean(int i) => (bool)currentValues[i]!;
 
-    public byte GetByte(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (byte)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetByte(entry.SourceIndex);
-    }
+    public byte GetByte(int i) => (byte)currentValues[i]!;
 
-    public char GetChar(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (char)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetChar(entry.SourceIndex);
-    }
+    public char GetChar(int i) => (char)currentValues[i]!;
 
-    public short GetInt16(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (short)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetInt16(entry.SourceIndex);
-    }
+    public short GetInt16(int i) => (short)currentValues[i]!;
 
-    public int GetInt32(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (int)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetInt32(entry.SourceIndex);
-    }
+    public int GetInt32(int i) => (int)currentValues[i]!;
 
-    public long GetInt64(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (long)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetInt64(entry.SourceIndex);
-    }
+    public long GetInt64(int i) => (long)currentValues[i]!;
 
-    public float GetFloat(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (float)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetFloat(entry.SourceIndex);
-    }
+    public float GetFloat(int i) => (float)currentValues[i]!;
 
-    public double GetDouble(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (double)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetDouble(entry.SourceIndex);
-    }
+    public double GetDouble(int i) => (double)currentValues[i]!;
 
-    public decimal GetDecimal(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (decimal)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetDecimal(entry.SourceIndex);
-    }
+    public decimal GetDecimal(int i) => (decimal)currentValues[i]!;
 
-    public DateTime GetDateTime(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (DateTime)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetDateTime(entry.SourceIndex);
-    }
+    public DateTime GetDateTime(int i) => (DateTime)currentValues[i]!;
 
-    public Guid GetGuid(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (Guid)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetGuid(entry.SourceIndex);
-    }
+    public Guid GetGuid(int i) => (Guid)currentValues[i]!;
 
-    public string GetString(int i)
-    {
-        ref var entry = ref entries[i];
-        return entry.Converter is not null
-            ? (string)entry.Converter(source.GetValue(entry.SourceIndex))
-            : source.GetString(entry.SourceIndex);
-    }
+    public string GetString(int i) => (string)currentValues[i]!;
 
     public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferOffset, int length)
     {
-        ref var entry = ref entries[i];
-        if (entry.Converter is not null)
+        var array = (byte[])currentValues[i]!;
+        var count = Math.Min(length, array.Length - (int)fieldOffset);
+        if (count > 0)
         {
-            var array = (byte[])entry.Converter(source.GetValue(entry.SourceIndex));
-            var count = Math.Min(length, array.Length - (int)fieldOffset);
-            if (count > 0)
-            {
-                array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
-            }
-            return count;
+            array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
         }
-
-        return source.GetBytes(entry.SourceIndex, fieldOffset, buffer, bufferOffset, length);
+        return count;
     }
 
     public long GetChars(int i, long fieldOffset, char[]? buffer, int bufferOffset, int length)
     {
-        ref var entry = ref entries[i];
-        if (entry.Converter is not null)
+        var array = (char[])currentValues[i]!;
+        var count = Math.Min(length, array.Length - (int)fieldOffset);
+        if (count > 0)
         {
-            var array = (char[])entry.Converter(source.GetValue(entry.SourceIndex));
-            var count = Math.Min(length, array.Length - (int)fieldOffset);
-            if (count > 0)
-            {
-                array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
-            }
-            return count;
+            array.AsSpan((int)fieldOffset, count).CopyTo(buffer);
         }
-
-        return source.GetChars(entry.SourceIndex, fieldOffset, buffer, bufferOffset, length);
+        return count;
     }
 }
