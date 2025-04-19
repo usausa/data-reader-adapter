@@ -1,6 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
 using System.Data;
+using System.Globalization;
+
+using CsvHelper;
 //using System.Globalization;
 
 //using CsvHelper;
@@ -42,44 +45,33 @@ objectImportCommand.Add(new Command("sql", "Load to SQL Server")
     })
 });
 
-var objectExportCommand = new Command("exp", "Export example");
-objectCommand.Add(objectExportCommand);
-
-// TODO
-
 //--------------------------------------------------------------------------------
-// Csv
+// Mapping
 //--------------------------------------------------------------------------------
 
-//var csvCommand = new Command("csv", "CSV example");
-//rootCommand.Add(csvCommand);
+var mapCommand = new Command("map", "Mapping example");
+rootCommand.Add(mapCommand);
 
-//var csvImportCommand = new Command("imp", "Import example");
-//csvCommand.Add(csvImportCommand);
+var mapImportCommand = new Command("imp", "Import example");
+mapCommand.Add(mapImportCommand);
 
-//csvImportCommand.Add(new Command("my", "Load to MySQL")
-//{
-//    Handler = CommandHandler.Create(static async () =>
-//    {
-//        // TODO fix convert ?
-//        using var reader = new CsvDataReader(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
-//        await DataHelper.ImportToMySql(reader);
-//    })
-//});
+mapImportCommand.Add(new Command("my", "Load to MySQL")
+{
+    Handler = CommandHandler.Create(static async () =>
+    {
+        using var reader = new MappingDataReader(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
+        await DataHelper.ImportToMySql(reader);
+    })
+});
 
-//csvImportCommand.Add(new Command("sql", "Load to SQL Server")
-//{
-//    Handler = CommandHandler.Create(static async () =>
-//    {
-//        using var reader = new CsvDataReader(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
-//        await DataHelper.ImportToSql(reader);
-//    })
-//});
-
-//var csvExportCommand = new Command("exp", "Export example");
-//csvCommand.Add(csvExportCommand);
-
-// TODO
+mapImportCommand.Add(new Command("sql", "Load to SQL Server")
+{
+    Handler = CommandHandler.Create(static async () =>
+    {
+        using var reader = new MappingDataReader(DataHelper.CreateCsvOption(), DataHelper.CreateCsvReader());
+        await DataHelper.ImportToSql(reader);
+    })
+});
 
 //--------------------------------------------------------------------------------
 // Avro
@@ -108,11 +100,6 @@ avroImportCommand.Add(new Command("sql", "Load to SQL Server")
         await DataHelper.ImportToSql(reader);
     })
 });
-
-var avroExportCommand = new Command("exp", "Export example");
-avroCommand.Add(avroExportCommand);
-
-// TODO
 
 //--------------------------------------------------------------------------------
 // Run
@@ -171,27 +158,29 @@ internal static class DataHelper
     }
 
     //--------------------------------------------------------------------------------
-    // CSV
+    // Mapping
     //--------------------------------------------------------------------------------
 
-    //private const string Content =
-    //    "Col1,Col2,Col3,Col4,Col5,Col6\n" +
-    //    "1,30,Data-1,option,true,2000-12-31 23:59:59\n" +
-    //    "2,,Data-2,,false,2000-12-31 23:59:59";
+    private const string Content =
+        "Col1,Col2,Col3,Col4,Col5,Col6\n" +
+        "1,30,Data-1,option,true,2000-12-31 23:59:59\n" +
+        "2,,Data-2,,false,2000-12-31 23:59:59";
 
-    //public static CsvReader CreateCsvReader() =>
-    //    new(new StringReader(Content), CultureInfo.InvariantCulture);
+#pragma warning disable CA2000
+    public static CsvDataReader CreateCsvReader() =>
+        new(new CsvReader(new StringReader(Content), CultureInfo.InvariantCulture));
+#pragma warning restore CA2000
 
-    //public static CsvDataReaderOption CreateCsvOption()
-    //{
-    //    var option = new CsvDataReaderOption();
-    //    option.AddColumn("Col1");
-    //    option.AddColumn("Col3");
-    //    option.AddColumn("Col4", emptyAsNull: true);
-    //    option.AddColumn("Col5");
-    //    option.AddColumn("Col6");
-    //    return option;
-    //}
+    public static MappingDataReaderOption CreateCsvOption()
+    {
+        var option = new MappingDataReaderOption();
+        option.AddColumn("Col1");
+        option.AddColumn("Col3");
+        option.AddColumn<string, string?>("Col4", static x => String.IsNullOrEmpty(x) ? null : x);
+        option.AddColumn<string, bool>("Col5", Boolean.Parse);
+        option.AddColumn<string, DateTime>("Col6", DateTime.Parse);
+        return option;
+    }
 
     //--------------------------------------------------------------------------------
     // Object
