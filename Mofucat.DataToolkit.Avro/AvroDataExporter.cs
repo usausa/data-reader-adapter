@@ -3,7 +3,9 @@ namespace Mofucat.DataToolkit;
 using System.Data.Common;
 using System.Data;
 using System.Globalization;
+#if NET9_0_OR_GREATER
 using System.Runtime.CompilerServices;
+#endif
 
 using Avro.File;
 using Avro.Generic;

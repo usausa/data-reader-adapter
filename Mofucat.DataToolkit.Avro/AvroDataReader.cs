@@ -4,7 +4,6 @@ using System;
 using System.Buffers;
 using System.Data;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 
 using Avro;
 using Avro.File;
