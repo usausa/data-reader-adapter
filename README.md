@@ -5,14 +5,14 @@
 ## ObjectDataReader
 
 ```csharp
-// Object
+// Source
 var list = new List<Data>
 [
     new() { Id = 1, Value = "Name-1" },
     new() { Id = 2 }
 ];
 
-// ReaderAdapter 
+// ObjectDataReader
 using var reader = new ObjectDataReader<Data>(list);
 
 // BulkCopy
@@ -25,7 +25,24 @@ await loader.WriteToServerAsync(reader);
 
 ## MappingDataReader
 
-(TODO)
+```csharp
+// Source
+var csvReader = ...
+
+// MappingReader 
+var option = new MappingDataReaderOption();
+option.AddColumn("Col1");
+option.AddColumn("Col3");
+option.AddColumn<string, bool>("Col5", Boolean.Parse);
+using var reader = new MappingDataReader(option, csvReader);
+
+// BulkCopy
+await using var con = new SqlConnection(ConnectionString);
+await con.OpenAsync();
+using var loader = new SqlBulkCopy(con);
+loader.DestinationTableName = "Data";
+await loader.WriteToServerAsync(reader);
+```
 
 # Mofucat.DataToolkit.Avro
 
@@ -34,8 +51,8 @@ await loader.WriteToServerAsync(reader);
 ## AvroDataReader
 
 ```csharp
-// ReaderAdapter 
-using var reader = new AvroDataReaderAdapter(File.OpenRead("data.avro"));
+// AvroDataReader
+using var reader = new AvroDataReader(File.OpenRead("data.avro"));
 
 // BulkCopy
 await using var con = new SqlConnection(ConnectionString);
@@ -47,4 +64,15 @@ await loader.WriteToServerAsync(reader);
 
 ## AvroDataExporter
 
-(TODO)
+```csharp
+await using var con = new SqlConnection(ConnectionString);
+
+// AvroDataExporter
+var exporter = new AvroDataExporter(con)
+{
+    Name = "Data",
+    Codec = new SnappyCodec()
+};
+
+await exporter.ExportAsync(File.OpenWrite($"data-{id}.avro"), $"SELECT * FROM Data WHERE Id = {id}");
+```
